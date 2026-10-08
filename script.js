@@ -804,7 +804,6 @@ new IntersectionObserver(es=>{cwVisible=es[0].intersectionRatio>=.3;maybeReveal(
   // 퍼즐이 끝난 뒤(=body 잠금 해제 후) 스크롤하면 0→1로 진행되는 값. GSAP ScrollTrigger의 onUpdate(아래)가
   // 매 스크롤마다 갱신하고, draw()는 이 값만 읽어서 리본/배경색/텍스트 페이드를 전부 그려냄
   let transProgress=0;
-  const HERO_FADE=.06; // 스크롤 시작 후 이 구간 동안 light-fall.js가 잔상을 부드럽게 만드는 정도를 서서히 올림
   let looping=false,idleFrames=0; // ScrollTrigger의 onUpdate가 초기화 중 동기적으로 한 번 호출될 수 있어, 이 값들은 미리 선언해둠
   const smoothstep=t=>t*t*(3-2*t); // 배경색이 휙 바뀌지 않고 서서히 바뀌도록
   // 모션을 줄여야 하거나(prefers-reduced-motion) GSAP 로딩이 실패했으면 리본 연출 전체를 건너뛰고
@@ -836,15 +835,6 @@ new IntersectionObserver(es=>{cwVisible=es[0].intersectionRatio>=.3;maybeReveal(
     return rgbStr({r:Math.round(a.r+(b.r-a.r)*t),g:Math.round(a.g+(b.g-a.g)*t),b:Math.round(a.b+(b.b-a.b)*t)});
   }
   BLOBS.forEach(b=>{b.gray=b.c.map(toGray);b.phase='pending';b.x=0;b.y=0;});
-
-  // light-fall.js가 위치/크기만 측정하도록 두는 투명 placeholder 요소 — 실제로 보이는 그림은
-  // light-fall.js 자신의 canvas가 담당하므로 여기엔 배경을 넣지 않음(색은 lights[].stops로 직접 넘김)
-  const fallLightEls=BLOBS.map(()=>{
-    const d=document.createElement('div');
-    d.style.position='absolute';d.style.pointerEvents='none';
-    hero.appendChild(d);
-    return d;
-  });
 
   /* 제자리 힌트: 빛이 들어가야 할 자리(글자 한가운데)에 그 빛 색의 얇은 점선 원을 은은하게 표시.
      빛이 가까워질수록(--near 0→1) 점선이 또렷해지고, 자리를 잡으면 사라짐 */
@@ -888,13 +878,6 @@ new IntersectionObserver(es=>{cwVisible=es[0].intersectionRatio>=.3;maybeReveal(
       const tr=el.getBoundingClientRect(),R=BLOBS[i].rr*scH*.74,d=hints[i];
       d.style.width=d.style.height=(R*2)+'px';
       d.style.left=((tr.left+tr.right)/2-hr.left-R)+'px';d.style.top=((tr.top+tr.bottom)/2-hr.top-R)+'px';
-    });
-    // light-fall.js가 읽어갈 placeholder 위치/크기를 히어로 원과 완전히 같은 공식(반지름=rr*sc)으로 맞춤
-    const sc=Math.max(w,h)*.62;
-    BLOBS.forEach((b,i)=>{
-      const r=Math.max(1,b.rr*sc),home=HOMES[i],el=fallLightEls[i];
-      el.style.width=el.style.height=(r*2)+'px';
-      el.style.left=(home.x-r)+'px';el.style.top=(home.y-r)+'px';
     });
   }
   size();
@@ -1171,7 +1154,7 @@ new IntersectionObserver(es=>{cwVisible=es[0].intersectionRatio>=.3;maybeReveal(
   const HEART=new Path2D(HEART_D);
   const HEX=[[0.1211, -0.9926], [0.9202, -0.3914], [0.7991, 0.6012], [-0.1211, 0.9926], [-0.9202, 0.3914], [-0.7991, -0.6012]]; // 육각형 꼭짓점(중심 기준, 외접원 반지름 1로 정규화)
   function heartPath2D(cx,cy,s){const k=s/257.5,p=new Path2D();p.addPath(HEART,new DOMMatrix().translate(cx-257.5*k,cy-213*k).scale(k));return p;}
-  /* 모양 있는 빛 그리기(히어로와 light-fall.js 낙하 스프라이트가 같이 씀) */
+  /* 모양 있는 빛 그리기 */
   /* 피그마 225:3222 방식 그대로: ① 도형 아래쪽 가운데(0.5, 0.886)를 중심으로 한 원형 그라데이션(중심 색 → 가장자리 색 80%)
      ② 안쪽 그림자(곱하기 · 도형마다 방향 다름)로 가장자리를 은은하게 물들이고 ③ 전체를 살짝 흐림.
      매 프레임 새로 그리면 무거워서, 모양·크기·색이 같으면 한 번 구운 그림(스프라이트)을 재사용 */
@@ -1325,9 +1308,7 @@ new IntersectionObserver(es=>{cwVisible=es[0].intersectionRatio>=.3;maybeReveal(
         return;
       }
       // revealed: 스크롤이 아직 시작 전(fq~0)이면 원래 방식대로 정적인 원을 그려서 보여주고,
-      // 스크롤이 시작되면(light-fall.js가 낙하 애니메이션을 전담) 여기서는 아무것도 그리지 않음(중복 방지)
-      // 스크롤 시작 직후 HERO_FADE 구간 동안은 원래 원을 서서히 흐리게 해서 light-fall.js 빛과 겹쳐 넘김
-      if(fq>.0005)return; // 스크롤이 시작되면 light-fall.js가 같은 모양으로 이어받음
+      if(fq>.0005)return; // 스크롤이 시작되면 여기서는 그리지 않음
       const heroA=1;
       const cx=HOMES[i].x,cy=HOMES[i].y;
       const t=Math.min(1,(now-allColorAt)/UNMUTE_MS); // 퍼즐 직후 회색→컬러로 돌아오는 짧은 크로스페이드
