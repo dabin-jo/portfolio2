@@ -173,10 +173,10 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
     document.body.classList.remove('lock');startLoop();
   };
   /* 전환용 빛 캔버스(화면 고정): 히어로 빛 → 반짝이는 점 → 빛 줄기(선) → 형광펜.
-     ① 줄어듦: 모양 그대로(히어로와 같은 스프라이트) 작아지면서 가운데가 하얗게 달아오른 빛 점이 됨
-     ② 날아감: 빛 점이 휘어진 길을 따라 형광펜 자리로 날아가며, 뒤로 가늘어지는 빛 꼬리와 반짝이 가루를 남김
+     ① 줄어듦: 모양 그대로(히어로와 같은 스프라이트) 작아져 작은 빛 덩어리가 됨(히어로 빛의 부드러운 번짐 그대로)
+     ② 날아감: 그 작은 빛이 천천히 돌며 휘어진 길을 따라 형광펜 자리로 날아가며, 뒤로 형광펜과 같은 색·굵기의 빛 꼬리(형광펜 줄기)를 남김
      ③ 칠하기: 형광펜 왼쪽 끝에 닿으면 그대로 오른쪽으로 쓸고 지나가며 형광펜을 칠함(Find.paint) → 빛은 잦아들고 꼬리가 거둬짐
-     전부 진행도(pA·pB) 기준이라 이전 버튼으로 돌아가면 그대로 역재생됨. 반짝이 가루와 마지막 잦아듦만 시간 기준 */
+     전부 진행도(pA·pB) 기준이라 이전 버튼으로 돌아가면 그대로 역재생됨. 마지막 잦아듦만 시간 기준 */
   function createDive(){
     const cvD=document.createElement('canvas');cvD.className='dive-cv';cvD.setAttribute('aria-hidden','true');
     document.body.appendChild(cvD);
@@ -197,6 +197,8 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
     }
     /* 빛 줄기 색(초록 별 · 핑크 육각형 · 파랑 네잎). 가운데 심은 하얗게 */
     const GLOW=[[182,255,138],[255,150,190],[110,176,255]];
+    let lastT=performance.now();
+    const INK=[[228,255,140],[255,157,180],[75,132,225]]; // 형광펜 색(find.js HL과 같게: 국순당 lime · 소소복담 pink · 삼토 blue)
     const rgba=(c,a)=>`rgba(${c[0]},${c[1]},${c[2]},${a})`;
     /* 타임라인(u: 전환 전체 0→1) — 빛마다 살짝 엇갈려 출발(STAG) */
     const SHRINK_END=.34,TRAVEL_START=.3,SWEEP_START=.82,STAG=[0,.03,.06];
@@ -225,96 +227,77 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
       let lo=0,hi=a.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(a[m].d<d)lo=m;else hi=m;}
       const A=a[lo],B=a[hi],t=(d-A.d)/((B.d-A.d)||1);return{x:A.x+(B.x-A.x)*t,y:A.y+(B.y-A.y)*t};
     }
-    /* 반짝이 가루: 빛 점이 지나간 자리에 흩뿌려져 반짝이다 사라짐 */
-    const dust=[];let lastT=performance.now();
-    function spawn(x,y,c,n,spread){
-      for(let k=0;k<n;k++)dust.push({x:x+(Math.random()-.5)*spread,y:y+(Math.random()-.5)*spread,vx:(Math.random()-.5)*.05,vy:(Math.random()-.5)*.05-.01,
-        life:500+Math.random()*900,age:0,s:.8+Math.random()*1.8,c,ph:Math.random()*6.3});
-    }
-    function drawDust(dt){
-      for(let k=dust.length-1;k>=0;k--){
-        const p=dust[k];p.age+=dt;if(p.age>p.life){dust.splice(k,1);continue;}
-        p.x+=p.vx*dt;p.y+=p.vy*dt;
-        const t=p.age/p.life,a=(1-t)*(.55+.45*Math.sin(p.age*.03+p.ph));
-        if(a<=.02)continue;
-        dctx.fillStyle=rgba(p.c,a*.5);dctx.beginPath();dctx.arc(p.x,p.y,p.s*2.6,0,7);dctx.fill();
-        dctx.fillStyle=`rgba(255,255,255,${a})`;dctx.beginPath();dctx.arc(p.x,p.y,p.s*.7,0,7);dctx.fill();
-      }
-    }
-    /* 빛 꼬리: 머리 쪽은 굵고 밝게, 꼬리 쪽은 가늘고 투명하게. 바깥 번짐 → 색 → 하얀 심 순서로 겹쳐 그림 */
-    function drawTrail(P,d0,d1,W,c,fade){
+    /* 빛 꼬리 = 형광펜 줄기: 형광펜과 같은 색·같은 굵기(줄 높이의 82%)의 납작한 띠가 빛 점 뒤로 이어짐.
+       머리 쪽은 진하고 꼬리 쪽으로 갈수록 옅어지고 조금 가늘어짐. 띠는 겹치지 않는 사각형 조각으로 채워서(둥근 끝 X)
+       형광펜으로 그은 것처럼 보이게 하고, 위에 은은한 빛 번짐과 가는 하얀 심만 얹음 */
+    function drawTrail(P,d0,d1,band,ink,glow,fade){ // 형광펜 위(길이 Lb 이후)는 실제 형광펜(DOM)이 칠해지므로 띠는 빛만 얹음
       if(d1-d0<1)return;
-      const N=36,q=[];for(let j=0;j<=N;j++)q.push(at(P,d0+(d1-d0)*j/N));
-      const passes=[[5,.07,c],[2.4,.22,c],[1,.75,c],[.34,.95,[255,255,255]]];
-      dctx.lineCap='round';
-      passes.forEach(([wm,am,col])=>{
+      const N=48,q=[];for(let j=0;j<=N;j++)q.push(at(P,d0+(d1-d0)*j/N));
+      const nrm=q.map((p,j)=>{const a=q[Math.max(0,j-1)],b=q[Math.min(N,j+1)],dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;return{x:-dy/L,y:dx/L};});
+      const ribbon=(wk,alphaAt,col)=>{
         for(let j=1;j<=N;j++){
-          const t=j/N,a=am*Math.pow(t,1.3)*fade;if(a<.01)continue;
-          dctx.strokeStyle=rgba(col,a);dctx.lineWidth=Math.max(.6,W*wm*(.12+.88*Math.pow(t,1.2)));
-          dctx.beginPath();dctx.moveTo(q[j-1].x,q[j-1].y);dctx.lineTo(q[j].x,q[j].y);dctx.stroke();
+          const t=j/N,a=alphaAt(t,d0+(d1-d0)*(j-.5)/N);if(a<.01)continue;
+          const w0=band*wk*(.55+.45*Math.pow((j-1)/N,.6))/2,w1=band*wk*(.55+.45*Math.pow(t,.6))/2,A=q[j-1],B=q[j],na=nrm[j-1],nb=nrm[j];
+          dctx.fillStyle=rgba(col,a);dctx.beginPath();
+          dctx.moveTo(A.x+na.x*w0,A.y+na.y*w0);dctx.lineTo(B.x+nb.x*w1,B.y+nb.y*w1);
+          dctx.lineTo(B.x-nb.x*w1+(B.x-A.x)*.04,B.y-nb.y*w1+(B.y-A.y)*.04);dctx.lineTo(A.x-na.x*w0,A.y-na.y*w0);dctx.closePath();dctx.fill();
         }
-      });
-    }
-    /* 빛 점(머리): 하얀 심 + 색 번짐 + 가로로 긴 십자 반짝임(살짝 깜빡) */
-    function drawHead(x,y,R,c,a,tw){
-      if(a<=.01)return;
-      const g=dctx.createRadialGradient(x,y,0,x,y,R);
-      g.addColorStop(0,`rgba(255,255,255,${a})`);g.addColorStop(.18,rgba(c,.9*a));g.addColorStop(.5,rgba(c,.25*a));g.addColorStop(1,rgba(c,0));
-      dctx.fillStyle=g;dctx.beginPath();dctx.arc(x,y,R,0,7);dctx.fill();
-      const fl=R*(1.6+.5*tw),fw=Math.max(1,R*.06);
-      [[fl,fw],[fw,fl*.55]].forEach(([rx,ry])=>{
-        const h=dctx.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));h.addColorStop(0,`rgba(255,255,255,${.85*a})`);h.addColorStop(1,'rgba(255,255,255,0)');
-        dctx.fillStyle=h;dctx.beginPath();dctx.ellipse(x,y,rx,ry,0,0,7);dctx.fill();
-      });
+      };
+      dctx.globalCompositeOperation='lighter';
+      ribbon(2.2,t=>.07*Math.pow(t,1.2)*fade,glow);            // 바깥 빛 번짐
+      dctx.globalCompositeOperation='source-over';
+      ribbon(1,(t,dd)=>dd>P.Lb?0:.9*Math.pow(t,.8)*fade,ink);    // 형광펜 띠(형광펜 자리에 오면 실제 형광펜이 이어받음)
+      dctx.globalCompositeOperation='lighter';
+      ribbon(.3,t=>.18*Math.pow(t,2.5)*fade,[255,255,255]);      // 머리 쪽 은은한 밝은 심
     }
     let linger=0,lingerRaf=0,lastArgs=[0,0];
     function frameDraw(pA,pB,lk){ // lk: 끝난 뒤 잦아드는 정도(0→1, 끝나기 전엔 0)
       if(!sprites)build();
-      const W=innerWidth,H=innerHeight,now=performance.now(),dt=Math.min(50,now-lastT);lastT=now;
+      const W=innerWidth,H=innerHeight,now=performance.now();lastT=now;
       if(cvD.width!==W||cvD.height!==H){cvD.width=W;cvD.height=H;off.width=Math.ceil(W*LS);off.height=Math.ceil(H*LS);}
-      const sc=Math.max(w,h)*.62,U=Math.min(1,pA*.3+pB*.7);
-      // ① 모양 단계: 히어로와 같은 방식(검정 바탕에 lighten → 밝기를 투명도로)으로 줄어드는 모양을 그림
+      const sc=Math.max(w,h)*.62,U=Math.min(1,pA*.3+pB*.7),fade=1-lk;
+      // 빛마다 진행 상태 계산
+      const L=BLOBS.map((b,i)=>{
+        const p=pathOf(i),u=c01((U-STAG[i])/(1-STAG[2])); // 빛마다 엇갈린 진행도
+        const ks=easeIO(c01(u/SHRINK_END)); // 줄어드는 정도
+        const tv=c01((u-TRAVEL_START)/(SWEEP_START-TRAVEL_START)),sw=c01((u-SWEEP_START)/(1-SWEEP_START));
+        const d=tv<1?p.Lb*easeIO(tv):p.Lb+p.Ls*(1-Math.pow(1-sw,1.6));
+        return{b,p,u,ks,tv,sw,d,pos:at(p,d)};
+      });
+      dctx.clearRect(0,0,W,H);
+      // ② 빛 꼬리(형광펜 줄기) + 형광펜 칠하기 — 빛 머리 아래에 깔림
+      L.forEach(({p,tv,d},i)=>{
+        window.Find&&Find.paint(i,c01((d-p.Lb)/(p.Ls||1)));
+        const TL=Math.min(p.Lb*.85,innerWidth*.5)*(1-lk); // 꼬리 길이(끝나면 거둬짐)
+        if(tv>0)drawTrail(p,Math.max(0,d-TL),d,p.lh*.82,INK[i],GLOW[i],fade);
+      });
+      // ① 빛 머리: 히어로 빛과 같은 모양·색·번짐(같은 스프라이트)이 작아진 채로 꼬리 앞에서 날아감.
+      //    검정 바탕에 lighten → 밝기를 투명도로 바꿔서 그림(히어로와 같은 방식)
       ox.setTransform(1,0,0,1,0,0);ox.globalCompositeOperation='source-over';ox.globalAlpha=1;
       ox.fillStyle='#000';ox.fillRect(0,0,off.width,off.height);
       ox.setTransform(LS,0,0,LS,0,0);ox.globalCompositeOperation='lighten';
-      let anyShape=false;const P=[],st=[];
-      BLOBS.forEach((b,i)=>{
-        P[i]=pathOf(i);
-        const u=c01((U-STAG[i])/(1-STAG[2])); // 빛마다 엇갈린 진행도
-        st[i]=u;
-        const ks=easeIO(c01(u/SHRINK_END)); // 줄어드는 정도
-        const a=1-c01((u-SHRINK_END*.72)/(SHRINK_END*.32));
-        if(a<=.01)return;
-        const D0=b.rr*sc*2,Dpt=P[i].lh*2.4,D=D0*Math.pow(Dpt/D0,ks);
-        const x=HOMES[i].x,y=HOMES[i].y-H*.03*Math.sin(Math.PI*Math.min(1,ks*1.2));
-        ox.globalAlpha=a;const sz=D*PAD;
-        ox.save();ox.translate(x,y);ox.rotate(ks*ks*.6*BEND[i]);ox.drawImage(sprites[i],-sz/2,-sz/2,sz,sz);ox.restore();
-        anyShape=true;
+      L.forEach(({b,p,ks,tv,sw,d,pos},i)=>{
+        const D0=b.rr*sc*2,Dpt=p.lh*2.3,D=D0*Math.pow(Dpt/D0,ks)*(1-.25*sw)*(1-.5*lk);
+        const lift=-H*.03*Math.sin(Math.PI*Math.min(1,ks*1.2))*(1-tv);
+        const rot=ks*ks*.6*BEND[i]+d*.004*BEND[i]; // 날아가며 천천히 돎
+        ox.globalAlpha=fade;const sz=D*PAD;
+        ox.save();ox.translate(pos.x,pos.y+lift);ox.rotate(rot);ox.drawImage(sprites[i],-sz/2,-sz/2,sz,sz);ox.restore();
       });
-      dctx.clearRect(0,0,W,H);
-      if(anyShape){
-        ox.globalAlpha=1;
-        const img=ox.getImageData(0,0,off.width,off.height),d=img.data;
-        for(let q=0;q<d.length;q+=4){const m=Math.max(d[q],d[q+1],d[q+2]);if(!m){d[q+3]=0;continue;}const k=255/m;d[q]*=k;d[q+1]*=k;d[q+2]*=k;d[q+3]=m;}
-        ox.putImageData(img,0,0);
-        dctx.globalCompositeOperation='source-over';dctx.imageSmoothingQuality='high';dctx.drawImage(off,0,0,W,H);
-      }
-      // ②③ 빛 점 · 빛 꼬리 · 형광펜 쓸기
+      ox.globalAlpha=1;
+      const img=ox.getImageData(0,0,off.width,off.height),px=img.data;
+      for(let q=0;q<px.length;q+=4){const m=Math.max(px[q],px[q+1],px[q+2]);if(!m){px[q+3]=0;continue;}const k=255/m;px[q]*=k;px[q+1]*=k;px[q+2]*=k;px[q+3]=m;}
+      ox.putImageData(img,0,0);
+      dctx.globalCompositeOperation='source-over';dctx.imageSmoothingQuality='high';
+      dctx.filter=U>SHRINK_END*.6?'blur(2px)':'none'; // 작아진 빛도 히어로처럼 가장자리가 부드럽게
+      dctx.drawImage(off,0,0,W,H);dctx.filter='none';
+      // 빛 머리 둘레의 은은한 번짐(뾰족한 반짝임 없이 부드럽게)
       dctx.globalCompositeOperation='lighter';
-      BLOBS.forEach((b,i)=>{
-        const p=P[i],u=st[i],c=GLOW[i],Wl=Math.max(3.5,p.lh*.2);
-        const hot=c01((u-SHRINK_END*.55)/(SHRINK_END*.45)); // 모양이 줄어들며 빛 점이 달아오름
-        const tv=c01((u-TRAVEL_START)/(SWEEP_START-TRAVEL_START)),sw=c01((u-SWEEP_START)/(1-SWEEP_START));
-        const d=tv<1?p.Lb*easeIO(tv):p.Lb+p.Ls*(1-Math.pow(1-sw,1.6));
-        const TL=Math.min(p.Lb*.85,innerWidth*.5)*(1-lk); // 꼬리 길이(끝나면 거둬짐)
-        window.Find&&Find.paint(i,c01((d-p.Lb)/(p.Ls||1)));
-        const pos=at(p,d),fade=1-lk;
-        if(tv>0)drawTrail(p,Math.max(0,d-TL),d,Wl,c,fade);
-        const R=Wl*(4.2+3*(1-tv)*(1-hot*.4))*(1-.6*lk),tw=Math.sin(now*.018+i*2);
-        drawHead(pos.x,pos.y,R,c,hot*fade,tw);
-        if(hot>.5&&fade>.05&&dt>0)spawn(pos.x,pos.y,c,tv>0&&tv<1||sw>0&&sw<1?3:1,Wl*(tv>0?2.5:4));
+      L.forEach(({p,ks,pos},i)=>{
+        const a=.22*c01(ks*1.4)*fade;if(a<.01)return;
+        const R=p.lh*2.2,g=dctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,R);
+        g.addColorStop(0,rgba(GLOW[i],a));g.addColorStop(1,rgba(GLOW[i],0));
+        dctx.fillStyle=g;dctx.beginPath();dctx.arc(pos.x,pos.y,R,0,7);dctx.fill();
       });
-      drawDust(dt);
       dctx.globalCompositeOperation='source-over';
       if(!shown){cvD.style.transition='none';cvD.style.opacity=1;shown=true;}
     }
@@ -322,14 +305,14 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
     function lingerLoop(){
       const k=c01((performance.now()-linger)/LINGER_MS);
       frameDraw(lastArgs[0],lastArgs[1],k);
-      if(k<1||dust.length)lingerRaf=requestAnimationFrame(lingerLoop);
+      if(k<1)lingerRaf=requestAnimationFrame(lingerLoop);
       else{lingerRaf=0;dctx.clearRect(0,0,cvD.width,cvD.height);cvD.style.opacity=0;shown=false;}
     }
     function render(pA,pB){
       lastArgs=[pA,pB];
       const vis=pA>.0005||pB>0;
       if(!vis){
-        if(lingerRaf){cancelAnimationFrame(lingerRaf);lingerRaf=0;}linger=0;dust.length=0;
+        if(lingerRaf){cancelAnimationFrame(lingerRaf);lingerRaf=0;}linger=0;
         if(shown){
           /* 히어로로 되돌아온 끝(pA·pB 모두 0): 여기서 바로 숨기면 히어로 캔버스가 빛을 다시 그리기 전
              한두 프레임 동안 빛이 없는 빈 화면이 보여 '깜빡'임 → 히어로 캔버스가 실제로 한 번 그린 뒤(frame()에서 hideAfterHeroDraw 호출) 숨김 */

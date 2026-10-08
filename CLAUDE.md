@@ -19,7 +19,7 @@ Cowork(Claude 앱)와 Claude Code가 번갈아 작업하는 폴더입니다. 작
 
 ## 디벨롭 방향 (점 · 선 · 면)
 1. 점: 스포트라이트(완성됨).
-2. 선: 형광펜. 전환(`script.js` createDive): 히어로 빛 모양이 줄어들어 반짝이는 점이 되고 → 빛 꼬리와 반짝이 가루를 남기며 휘어진 길로 날아가 → 맡은 형광펜을 그대로 쓸며 칠함(`Find.paint`). 다 오면 나머지 형광펜이 차례로(`Find.play`). 빛 색은 `GLOW`, 타이밍은 `SHRINK_END`·`TRAVEL_START`·`SWEEP_START`, 꼬리 길이는 `TL`.
+2. 선: 형광펜. 전환(`script.js` createDive): 히어로 빛 모양이 줄어들어 반짝이는 점이 되고 → 형광펜과 같은 색·굵기의 빛 꼬리(납작한 형광펜 띠, 반짝이 가루 없음)를 남기며 휘어진 길로 날아가 → 맡은 형광펜을 그대로 쓸며 칠함(`Find.paint`). 다 오면 나머지 형광펜이 차례로(`Find.play`). 빛 번짐 색은 `GLOW`, 꼬리 띠 색은 `INK`(find.js `HL`과 맞춤), 타이밍은 `SHRINK_END`·`TRAVEL_START`·`SWEEP_START`, 꼬리 길이는 `TL`.
 3. 면: 종이접기. 1차 구현을 마쳤습니다. 개연성이 부족하면 빛 컨셉으로 바꿀 수도 있습니다. 제목 `REVEAL THE UNSEEN`과 위쪽 두 단 글은 임시 문구입니다.
 
 ## 참고
