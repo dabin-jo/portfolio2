@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jodabin Portfolio</title>
+<!-- 기본 SEO -->
+<meta name="description" content="조다빈의 포트폴리오">
+<meta name="keywords" content="포트폴리오, portfolio">
+<meta name="author" content="jodabin">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<link rel="canonical" href="https://www.jodabinportfolio.com/">
+<meta name="theme-color" content="#000000">
+<!-- 파비콘 세트 (assets/favicon-og-set/favicon) -->
+<link rel="icon" type="image/svg+xml" href="assets/favicon-og-set/favicon/favicon.svg">
+<link rel="icon" href="assets/favicon-og-set/favicon/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-og-set/favicon/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-og-set/favicon/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/favicon-og-set/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-og-set/favicon/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/favicon-og-set/favicon/icon-512.png">
+<link rel="manifest" href="assets/favicon-og-set/favicon/site.webmanifest">
+<!-- 오픈그래프 (카카오톡/페이스북 등 공유 미리보기) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Jodabin Portfolio">
+<meta property="og:title" content="Jodabin Portfolio">
+<meta property="og:description" content="조다빈의 포트폴리오">
+<meta property="og:url" content="https://www.jodabinportfolio.com/">
+<!-- 트위터(X) 카드 -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Jodabin Portfolio">
+<meta name="twitter:description" content="조다빈의 포트폴리오">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="project.css">
+</head>
+<body>
+<!-- 포트폴리오 상세 페이지 (피그마 node 261:877 "포트폴리오 상세 - 세로", 1920×1080 기준)
+     어떤 프로젝트를 보여줄지는 주소의 ?p=번호(0~5)로 정함 — 데이터는 project.js 맨 위 PROJECTS -->
+<!-- 왼쪽 위 뒤로가기: 십자말풀이로 돌아감(풀어둔 상태 그대로). 자료를 크게 보고 있을 땐 먼저 그것만 닫음 -->
+<a class="pd-back" id="pdClose" href="index.html" aria-label="뒤로 가기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5L8 12L15 19"/></svg><span>BACK</span></a>
+<!-- 배경: 피그마 131:703의 도형(별·육각형·네잎) 그대로 — 불투명도 50% + 색상(color) 혼합이라 바탕의 밝기는 유지하고 색만 은은하게 물듦. 천천히 떠다니고 마우스 쪽으로 살짝 따라 움직임 -->
+<div class="pd-bg" id="pdBg" aria-hidden="true">
+  <svg class="sh sh-star" style="left:calc(var(--u)*-346.5);top:calc(var(--u)*-222.8);width:calc(var(--u)*893.0);height:calc(var(--u)*894.0);rotate:-14.94deg" viewBox="0 0 893.000 894.000"><defs><radialGradient id="gstar"><stop offset="0" stop-color="#E5FF7F"/><stop offset="1" stop-color="#B7FEC6" stop-opacity=".8"/></radialGradient></defs><path fill="url(#gstar)" d="M 446.5 0 C 446.5 0 539.686 176.17 628.357 264.94 C 717.027 353.71 893 447 893 447 C 893 447 717.027 540.29 628.357 629.06 C 539.686 717.83 446.5 894 446.5 894 C 446.5 894 353.314 717.83 264.643 629.06 C 175.973 540.29 0 447 0 447 C 0 447 175.973 353.71 264.643 264.94 C 353.314 176.17 446.5 0 446.5 0 Z"/></svg>
+  <svg class="sh sh-hex" style="left:calc(var(--u)*403.1);top:calc(var(--u)*346.6);width:calc(var(--u)*424.5);height:calc(var(--u)*490.2);rotate:6.96deg" viewBox="0 0 424.486 490.155"><defs><radialGradient id="ghex"><stop offset="0" stop-color="#F46171"/><stop offset="1" stop-color="#FEDCB7" stop-opacity=".8"/></radialGradient></defs><path fill="url(#ghex)" d="M 212.243 0 L 424.486 122.539 L 424.486 367.616 L 212.243 490.155 L 0 367.616 L 0 122.539 Z"/></svg>
+  <svg class="sh sh-clover" style="left:calc(var(--u)*1500.1);top:calc(var(--u)*315.7);width:calc(var(--u)*206.6);height:calc(var(--u)*207.0);rotate:-37.31deg" viewBox="0 0 206.642 207.000"><defs><radialGradient id="gclover"><stop offset="0" stop-color="#054ABB"/><stop offset="1" stop-color="#CFF0E7" stop-opacity=".8"/></radialGradient></defs><path fill="url(#gclover)" d="M 145.28 0 C 179.169 0 206.642 27.52 206.642 61.468 C 206.642 77.725 200.341 92.507 190.053 103.5 C 200.341 114.493 206.642 129.275 206.642 145.532 C 206.642 179.48 179.169 207 145.28 207 C 129.051 207 114.294 200.688 103.321 190.383 C 92.347 200.688 77.591 207 61.362 207 C 27.473 207 0 179.48 0 145.532 C 0 129.275 6.3 114.493 16.588 103.5 C 6.3 92.507 0 77.725 0 61.468 C 0 27.52 27.473 0 61.362 0 C 77.591 0 92.347 6.311 103.321 16.617 C 114.294 6.311 129.051 0 145.28 0 Z"/></svg>
+  <svg class="sh sh-hex2" style="left:calc(var(--u)*1421.6);top:calc(var(--u)*417.3);width:calc(var(--u)*715.0);height:calc(var(--u)*825.6);rotate:6.96deg" viewBox="0 0 714.952 825.555"><defs><radialGradient id="ghex2"><stop offset="0" stop-color="#F46171"/><stop offset="1" stop-color="#FEDCB7" stop-opacity=".8"/></radialGradient></defs><path fill="url(#ghex2)" d="M 357.476 0 L 714.952 206.389 L 714.952 619.167 L 357.476 825.555 L 0 619.167 L 0 206.389 Z"/></svg>
+</div>
+<div class="pd-dim" id="pdDim"></div>
+<main class="pd">
+  <header class="pd-top">
+    <!-- 피그마 261:877 "포트폴리오 상세 - 세로": 단어 칸 옆(x=140)에 제목(24) → 20 아래 기간 → 12 아래 기여도,
+         y=200부터 설명(폭 820, 두 문단 이어서), 오른쪽 아래(자료 바로 위)에 회색 툴 아이콘 -->
+    <div class="pd-info">
+      <button type="button" class="pd-word" id="pdWord"></button><!-- 누르면 글자 칸이 파도타기(뒤로가기는 왼쪽 위 BACK) -->
+      <div class="pd-text">
+        <h1 class="pd-title" id="pdTitle"></h1>
+        <div class="pd-meta"><span class="pd-date" id="pdDate"></span><p class="pd-contrib" id="pdContrib"></p></div>
+        <div class="pd-body"><p class="pd-desc" id="pdDesc1"></p><p class="pd-desc" id="pdDesc2"></p></div>
+      </div>
+    </div>
+    <a class="pd-btn" id="pdLink" href="#" target="_blank" rel="noopener">포트폴리오 링크 이동</a>
+  </header>
+  <!-- 큰 자료(PPT) 영역: 평소엔 화면 아래에 윗부분만 살짝 보이고, 누르거나 아래로 스크롤하면 아래에서 위로 올라와 화면 가득 크게 봄.
+       크게 본 상태에선 안에서 스크롤로 넘겨 보고, 맨 위에서 위로 스크롤하거나 Esc·X를 누르면 다시 내려감 -->
+  <ul class="pd-tools" id="pdTools" aria-label="사용 툴"></ul>
+  <section class="pd-media" id="pdMedia" tabindex="0" aria-label="자료 크게 보기">
+    <span class="pd-peek" aria-hidden="true"><i>↑</i> 눌러서 크게 보기</span>
+    <div class="pd-slides" id="pdSlides"></div>
+  </section>
+</main>
+<script src="project.js"></script>
+</body>
+</html>

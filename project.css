@@ -1,0 +1,164 @@
+/* 포트폴리오 상세 페이지 — 피그마 node 124:443 (1920×1080) 수치를 화면 폭에 비례하게(--u = 1920 기준 1px) */
+@font-face{font-family:'A2z';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-6@1.0/%EC%97%90%EC%9D%B4%ED%88%AC%EC%A7%80%EC%B2%B4-3Light.woff2') format('woff2');font-weight:300;font-display:swap}
+@font-face{font-family:'A2z';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-6@1.0/%EC%97%90%EC%9D%B4%ED%88%AC%EC%A7%80%EC%B2%B4-4Regular.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'A2z';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-6@1.0/%EC%97%90%EC%9D%B4%ED%88%AC%EC%A7%80%EC%B2%B4-5Medium.woff2') format('woff2');font-weight:500;font-display:swap}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--u:calc(100vw / 1920)}
+html{scrollbar-width:none}
+html::-webkit-scrollbar{display:none}
+body{background:transparent;color:#000;font-family:'A2z',-apple-system,sans-serif;height:100vh;overflow:hidden} /* 한 화면(100vh) 안에서 모두 — 자료는 아래에서 올라오는 시트로 봄 */
+.pd{position:relative} /* z-index를 주지 않음 — 자료 시트(z6)가 흐린 막(z5) 위로 올라오게 */
+
+.pd{padding:calc(var(--u)*80) calc(var(--u)*80) calc(var(--u)*120)}
+.pd-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+
+/* 단어 글자 상자: 30×30, 반투명 흰 바탕 + 0.5px 검정 선, 옆 칸과 선이 겹치도록 붙임. 첫 칸 왼쪽 위에 작은 번호 */
+.pd-word{display:inline-flex;text-decoration:none;color:#000;cursor:pointer;background:none;border:0;padding:0;font:inherit;align-self:flex-start}
+.pd-word:focus-visible{outline:1.5px solid #111;outline-offset:3px}
+/* 파도타기: 칸마다 --i 순서로 조금씩 늦게 튀어 오름. 가로 단어는 위로, 세로 단어는 오른쪽으로 */
+.pd-word .b.wave{opacity:1;animation:boxWave .7s cubic-bezier(.3,.7,.4,1) calc(var(--i)*55ms) both}
+.pd-v .pd-word .b.wave{animation-name:boxWaveV}
+@keyframes boxWave{0%{transform:none}35%{transform:translateY(-38%) scale(1.06);background:#fff}70%{transform:translateY(6%)}100%{transform:none}}
+@keyframes boxWaveV{0%{transform:none}35%{transform:translateX(38%) scale(1.06);background:#fff}70%{transform:translateX(-6%)}100%{transform:none}}
+.pd-word .b{position:relative;width:max(22px,calc(var(--u)*30));height:max(22px,calc(var(--u)*30));
+  background:rgba(255,255,255,.5);border:1px solid #000;display:flex;align-items:center;justify-content:center;
+  font-size:max(12px,calc(var(--u)*16));font-weight:400}
+/* 테두리는 칸마다 따로(칸이 나타날 때 선도 같이 나타나게 — 묶음 전체에 두면 로딩 중 위아래 선이 먼저 그려져 보였음).
+   옆 칸과 1px 겹쳐 놓아서 칸 사이 선은 한 줄로 보임 */
+.pd-word .b + .b{margin-left:-1px}
+.pd-word .b sup{position:absolute;left:2px;top:1px;font-size:max(6px,calc(var(--u)*6));line-height:1}
+/* 피그마 261:877 기준, 글자만 한 단계 키움 — 제목(A2Z Medium 28) / 20 아래 기간(Regular 16, #878787) / 12 아래 기여도(Light 16, 항목 사이 8) */
+.pd-title{font-size:max(20px,calc(var(--u)*28));font-weight:500;letter-spacing:-.06em;line-height:1;white-space:nowrap}
+.pd-meta{display:flex;flex-direction:column;align-items:flex-start;gap:max(8px,calc(var(--u)*12));margin-top:max(12px,calc(var(--u)*20));
+  font-size:max(13px,calc(var(--u)*16));letter-spacing:-.06em;line-height:1}
+.pd-date{font-weight:400;color:#878787}
+.pd-contrib{display:flex;flex-wrap:wrap;gap:max(6px,calc(var(--u)*8));font-weight:300;white-space:nowrap}
+/* 'N인 프로젝트' 뒤에 옅은 세로선으로 기여도와 구분 */
+.pd-contrib .team{display:inline-flex;align-items:center;gap:max(6px,calc(var(--u)*8))}
+.pd-contrib .team::after{content:'';width:1px;height:.9em;background:#bdbdbd}
+/* 설명: 16px, 폭 900(글자를 키운 만큼 조금 넓힘), 행간 1.6, 두 문단을 간격 없이 이어서 */
+/* 기여도 아랫선(y=164)에서 36 아래 */
+.pd-body{margin-top:max(20px,calc(var(--u)*36));
+  max-width:max(340px,calc(var(--u)*900))}
+.pd-desc{font-size:max(13px,calc(var(--u)*16));font-weight:300;letter-spacing:-.06em;line-height:1.6;word-break:keep-all}
+/* 사용 툴: 자료 윗변(y=585) 96 위(y=489) 오른쪽 끝(x=1840)에 63×63 칸. 아이콘 높이 31로 맞추고 회색(#9a9a9a) — 올리면 검정.
+   자료가 화면 높이 기준(54.2vh)이라 같은 기준으로 붙임 */
+.pd-tools{position:absolute;right:calc(var(--u)*80);top:calc(54.2vh - var(--u)*96);display:flex;list-style:none}
+.pd-tools li{width:calc(var(--u)*63);height:calc(var(--u)*63);min-width:44px;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:calc(var(--u)*6.3);color:#9a9a9a;transition:color .25s}
+.pd-tools img{display:block;height:max(calc(var(--h)*.7px),calc(var(--u)*var(--h)));width:auto;filter:brightness(0) invert(.6);transition:filter .25s}
+.pd-tools li:hover{color:#111}.pd-tools li:hover img{filter:none}
+.pd-tools span{font-size:max(9px,calc(var(--u)*10));line-height:1.3;letter-spacing:-.04em;white-space:nowrap}
+
+/* 오른쪽 위 버튼(피그마 261:877): Pretendard Medium 16, 여백 12·32, 모서리 10. 링크 없으면 회색 */
+.pd-btn{flex:none;display:inline-flex;align-items:center;justify-content:center;
+  padding:max(8px,calc(var(--u)*12)) max(20px,calc(var(--u)*32));line-height:1;border-radius:max(8px,calc(var(--u)*10));
+  background:#d9d9d9;color:#999;font-family:'Pretendard',sans-serif;font-weight:500;font-size:max(12px,calc(var(--u)*16));letter-spacing:-.03em;
+  text-decoration:none;white-space:nowrap;transition:background .25s,color .25s}
+.pd-btn:hover{background:#cfcfcf;color:#555}
+.pd-btn[aria-disabled="true"]{cursor:default}
+
+/* 세로 단어(국순당·해잇·집메이트) — 피그마 node 131:703: 글자 상자를 세로로 쌓고(칸끼리는 아래쪽 선만),
+   설명은 상자 오른쪽 30 떨어진 자리(x=140)에 위쪽을 맞춰 둠. 큰 이미지 영역은 가로형과 같은 y=585 */
+.pd-v .pd-info{display:flex;align-items:flex-start;gap:calc(var(--u)*30)}
+.pd-v .pd-word{flex-direction:column}
+.pd-v .pd-word .b + .b{margin-left:0;margin-top:-1px}
+/* 가로 단어(해잇·삼토·집메이트): 글자 상자를 가로로 두고, 제목·설명은 그 아래 30 떨어진 자리부터 */
+.pd:not(.pd-v) .pd-text{margin-top:max(16px,calc(var(--u)*30))}
+
+/* 들어올 때: 글자 상자가 하나씩 살포시 내려앉고(십자말풀이 칸 모션과 같은 느낌), 나머지는 페이드인 */
+.pd-word .b{opacity:0;animation:boxIn .9s cubic-bezier(.22,1,.36,1) forwards;animation-delay:calc(var(--i)*60ms + 150ms)}
+@keyframes boxIn{from{opacity:0}to{opacity:1}}
+.pd-title,.pd-meta,.pd-desc,.pd-tools,.pd-btn,.pd-slides{opacity:0;animation:fadeUp .9s ease forwards}
+.pd-title{animation-delay:.4s}.pd-meta{animation-delay:.5s}.pd-desc{animation-delay:.55s}.pd-desc+.pd-desc{animation-delay:.62s}.pd-btn{animation-delay:.65s}.pd-tools{animation-delay:.75s}.pd-slides{animation-delay:.8s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.pd-word .b,.pd-title,.pd-meta,.pd-desc,.pd-tools,.pd-btn,.pd-slides{animation:none;opacity:1}}
+
+@media (max-width:700px){
+  .pd-v .pd-info{flex-direction:column}
+  .pd-body{margin-top:20px}
+  .pd-tools{position:static;flex-wrap:wrap;margin-top:16px}
+  .pd{padding:24px 20px 60px}
+  .pd-top{flex-direction:column}
+}
+/* 왼쪽 위 뒤로가기 버튼: 화면에 고정. 마우스를 올리면 화살표가 왼쪽으로 살짝 */
+.pd-back{position:fixed;left:20px;top:18px;z-index:10;height:34px;padding:0 14px 0 10px;border-radius:calc(10px*.85*min(100vw/1920px,100vh/1080px));/* 모서리: 십자말풀이 버튼과 같은 값 */display:flex;align-items:center;gap:4px;
+  background:rgba(245,245,245,.85);box-shadow:0 0 0 1px rgba(0,0,0,.12);color:#111;text-decoration:none;font-size:11px;letter-spacing:.14em;transition:background .25s,color .25s}
+.pd-back svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s}
+.pd-back:hover{background:#111;color:#fff}
+.pd-back:hover svg{transform:translateX(-3px)}
+/* ===== 배경 도형(피그마 131:703): 위치·크기·기울기 그대로(--u = 1920 기준 1px), 불투명도 50%, 혼합 모드 color =====
+   color 혼합은 바탕(#f5f5f5)의 밝기를 그대로 두고 색만 입혀서, 도형이 튀지 않고 은은한 색 얼룩처럼 보임.
+   (도형마다 따로 혼합하면 배경 묶음 안에서만 섞여 효과가 안 나서, 배경 묶음 전체에 혼합을 줌)
+   drift = 느린 자체 움직임, --px/--py = 마우스를 따라 살짝 밀리는 정도(project.js) */
+html{background:#f5f5f5} /* 바탕은 html에(body는 투명) — body에 두면 뒤(z-index:-1)의 도형을 덮어버림 */
+.pd-bg{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;mix-blend-mode:color}
+.pd-bg .sh{position:absolute;overflow:visible;opacity:.5;transform-origin:0 0;will-change:transform;
+  translate:calc(var(--px,0)*var(--k,20px)) calc(var(--py,0)*var(--k,20px));transition:translate 1.2s cubic-bezier(.2,.8,.3,1)}
+.sh-star{--k:28px;animation:drA 22s ease-in-out infinite alternate}
+.sh-hex{--k:-18px;animation:drB 26s ease-in-out infinite alternate}
+.sh-clover{--k:36px;animation:drC 19s ease-in-out infinite alternate}
+.sh-hex2{--k:-24px;animation:drD 24s ease-in-out infinite alternate}
+@keyframes drA{from{transform:translate(0,0) rotate(-2deg)}to{transform:translate(2vw,3vh) rotate(3deg)}}
+@keyframes drB{from{transform:translate(0,0) rotate(0deg)}to{transform:translate(-2vw,-3vh) rotate(-4deg)}}
+@keyframes drC{from{transform:translate(0,0) rotate(0deg)}to{transform:translate(-1.5vw,3vh) rotate(8deg)}}
+@keyframes drD{from{transform:translate(0,0) rotate(2deg)}to{transform:translate(-2vw,-2vh) rotate(-3deg)}}
+/* 도형 자체가 제자리에서 아주 천천히 계속 회전(한 바퀴 4~6분). 떠다니는 움직임(transform)·기본 기울기(rotate)와 겹치지 않게 안쪽 path에 줌 */
+.pd-bg .sh path{transform-box:fill-box;transform-origin:50% 50%;animation:shSpin 300s linear infinite}
+.pd-bg .sh-star path{animation-duration:360s}
+.pd-bg .sh-hex path{animation-duration:280s;animation-direction:reverse}
+.pd-bg .sh-clover path{animation-duration:240s}
+.pd-bg .sh-hex2 path{animation-duration:330s;animation-direction:reverse}
+@keyframes shSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.pd-bg .sh,.pd-bg .sh path{animation:none;transition:none}}
+
+/* ===== 자료(PPT) 시트: 평소엔 화면 아래(피그마 y=585)에서 윗부분만 보이고, 누르거나 아래로 스크롤하면 위로 올라와 크게 봄 ===== */
+.pd-media{--peek:54.2vh;position:fixed;z-index:6;left:calc(var(--u)*80);right:calc(var(--u)*80);top:0;height:100vh;
+  transform:translateY(var(--peek));transition:transform .85s cubic-bezier(.22,1,.36,1),left .85s cubic-bezier(.22,1,.36,1),right .85s cubic-bezier(.22,1,.36,1);
+  cursor:zoom-in;outline:none}
+.pd-media:not(.open):hover,.pd-media:not(.open):focus-visible{transform:translateY(calc(var(--peek) - 14px))}
+.pd-slides{height:100%;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*40);scrollbar-width:none}
+.pd-slides::-webkit-scrollbar{display:none}
+.pd-slides .ph,.pd-slides img{display:block;flex:none;width:100%;aspect-ratio:1760/990;background:#d9d9d9;object-fit:cover;
+  transition:width .85s cubic-bezier(.22,1,.36,1),border-radius .85s,box-shadow .85s}
+/* 윗변 위의 작은 안내: 화살표가 위로 살짝살짝 움직임 */
+.pd-peek{position:absolute;left:50%;top:-36px;transform:translateX(-50%);font-size:12px;letter-spacing:.04em;color:#888;white-space:nowrap;
+  transition:opacity .4s;opacity:0;animation:fadeIn .6s ease 1.4s forwards}
+.pd-peek i{display:inline-block;font-style:normal;margin-right:4px;animation:peekUp 1.6s ease-in-out infinite}
+@keyframes peekUp{0%,100%{transform:translateY(2px)}50%{transform:translateY(-3px)}}
+@keyframes fadeIn{to{opacity:1}}
+/* 크게 본 상태: 화면 가득(양옆 여백 줄임), 안에서 스크롤로 넘겨 봄. 뒤 화면은 옅게 가려짐 */
+.pd-media.open{transform:translateY(0);left:24px;right:24px;cursor:default}
+.pd-media.open .pd-peek{opacity:0!important;animation:none}
+.pd-media.open .pd-slides{overflow-y:auto;padding:max(24px,4vh) 0}
+.pd-media.open .pd-slides .ph,.pd-media.open .pd-slides img{width:min(100%,calc((100vh - max(48px,8vh)) * 1760 / 990));border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.12)}
+.pd-dim{position:fixed;inset:0;z-index:5;background:rgba(245,245,245,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .6s ease}
+body.sheet-open .pd-dim{opacity:1;pointer-events:auto}
+/* 크게 본 상태의 아래쪽 안내 */
+.pd-media::after{content:'위로 스크롤하거나 Esc를 누르면 닫혀요';position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:11px;color:#888;letter-spacing:.02em;padding:4px 12px;border-radius:99px;background:rgba(245,245,245,.9);opacity:0;pointer-events:none;transition:opacity .4s .5s;white-space:nowrap}
+.pd-media.open::after{opacity:1}
+@media (max-width:700px){.pd-media{left:20px;right:20px;--peek:62vh}.pd-media.open{left:12px;right:12px}}
+/* 링크가 있는 프로젝트의 버튼: 피그마처럼 연두색(누를 수 있음), 없으면 회색 그대로 */
+.pd-btn:not([aria-disabled="true"]){background:#9cffb1;color:#111}
+.pd-btn:not([aria-disabled="true"]):hover{background:#111;color:#9cffb1}
+
+/* 오른쪽 단축 바(크게 볼 때만): 장마다 작은 미리보기 + 번호. 지금 보는 장은 진하게, 나머지는 옅게 */
+.pd-rail{position:fixed;z-index:7;right:14px;top:50%;transform:translate(24px,-50%);max-height:84vh;overflow-y:auto;scrollbar-width:none;
+  display:flex;flex-direction:column;gap:6px;padding:6px 4px;opacity:0;pointer-events:none;transition:opacity .45s ease,transform .6s cubic-bezier(.22,1,.36,1)}
+.pd-rail::-webkit-scrollbar{display:none}
+/* 위아래 끝 흐림(--ft·--fb는 project.js가 스크롤 위치에 따라 0 또는 40px로) */
+.pd-rail{overscroll-behavior:contain;--ft:0px;--fb:0px;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);
+          mask-image:linear-gradient(to bottom,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%)}
+body.sheet-open .pd-rail{opacity:1;pointer-events:auto;transform:translate(0,-50%);transition-delay:.25s}
+.pd-rail button{position:relative;flex:none;width:64px;aspect-ratio:16/9;border:1px solid #111;padding:0;border-radius:0;overflow:hidden;cursor:pointer;background:#d9d9d9;
+  opacity:.45;outline:1.5px solid transparent;outline-offset:2px;transition:opacity .25s,outline-color .25s}
+.pd-rail button img{display:block;width:100%;height:100%;object-fit:cover}
+.pd-rail button span{position:absolute;left:0;top:0;box-sizing:border-box;width:15px;height:15px;padding:0;display:flex;align-items:center;justify-content:center;font-family:'A2z',sans-serif;font-size:8px;line-height:1;letter-spacing:-.3px;color:#111;background:rgba(255,255,255,.92);border-right:1px solid #111;border-bottom:1px solid #111} /* 십자말풀이 칸 번호처럼: 왼쪽 위 작은 칸에 숫자 */
+.pd-rail button:hover{opacity:.8}
+.pd-rail button.cur{opacity:1;outline-color:#111}
+/* 단축 바가 있으면 크게 본 자료는 그만큼 왼쪽으로 비켜 줌 */
+body.has-rail .pd-media.open{right:96px}
+@media (max-width:700px){.pd-rail{display:none}body.has-rail .pd-media.open{right:12px}}
+/* 터치로 넘길 때도 한 장씩 딱 맞게 멈춤 */
+.pd-media.open .pd-slides{scroll-snap-type:y mandatory}
+.pd-media.open .pd-slides > *{scroll-snap-align:center}

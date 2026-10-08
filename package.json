@@ -1,0 +1,10 @@
+{
+  "name": "jodabin-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "조다빈 포트폴리오 (HTML/CSS/JS)",
+  "scripts": {
+    "dev": "npx --yes live-server --port=5173",
+    "start": "npx --yes live-server --port=5173"
+  }
+}
