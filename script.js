@@ -3,794 +3,7 @@
    html{scroll-behavior:smooth} 때문에 그 되돌아온 지점에서 위로 스르륵 스크롤되는 게 화면에 그대로 보였던 것.
    브라우저가 아예 위치를 기억/복원하지 않도록 끔 */
 if('scrollRestoration' in history)history.scrollRestoration='manual';
-/* 십자말풀이 크기 배율: 1920×1080에서 칸 한 변 = 60 × CW_K px. 마지막 페이지(REVEAL) 도트 칸도 이 크기에 맞춤 */
-const CW_K=.85;
-/* ===== 십자말풀이 스테이지 스케일 =====
-   피그마 원본이 1920x1080 캔버스라서, 그 비율(16:9) 그대로 축소/확대해 항상 100vh 안에 꽉 차게 맞춤 */
-(()=>{
-  const stage=document.getElementById('cwStage'),cwSec=document.getElementById('cw');
-  function fit(){
-    const w=cwSec.clientWidth,h=cwSec.clientHeight;
-    const s=Math.min(w/1920,h/1080)*CW_K; // 십자말풀이 전체 크기(칸 크기)를 CW_K만큼 줄임 — 마지막 페이지 격자도 같은 값을 씀
-    stage.style.transform=`scale(${s})`;
-    /* 화면 속 내용물(칸·장식 상자·그림·카드·버튼)이 캔버스 안에서 왼쪽/위로 치우쳐 있어서
-       (1920×1080 기준 여백: 왼쪽 189 · 오른쪽 64 · 위 41 · 아래 68) 전체를 통째로 옮겨 상하좌우 여백을 똑같이 맞춤 */
-    const OX=0,OY=0; // 피그마 225:2641 배치를 그대로 쓰므로 1920×1080 캔버스를 가운데에 그대로 둠
-    stage.style.top=((h-1080*s)/2+OY*s)+'px';
-    /* 좌우 여백도 위아래 여백과 같게: 칸 격자는 가운데 그대로 두고, 양쪽 끝 요소(왼쪽 색 상자 묶음 /
-       오른쪽 카드·버튼·색 상자 묶음)만 바깥으로 벌려서 화면 가장자리까지 거리를 위아래 여백과 맞춤.
-       내용물 크기(1920×1080 기준) 가로 1667 · 세로 971 → 화면 비율이 넓을수록 조금 더 벌어짐 */
-    const m=(h-971*s)/2;                         // 위아래 여백(화면 px)
-    const sx0=Math.max(0,Math.min(220,((w-1920*s)/2-24*s)/s)); // 단서 카드·버튼만 화면 오른쪽 여백 쪽으로 밀어 십자말풀이와 사이를 벌림(캔버스 px)
-    /* 좌우 여백 맞추기: 카드가 오른쪽으로 밀려 있어서 왼쪽(허수아비 그림 x≈92)만 여백이 넓었음.
-       카드·버튼은 화면에서 그대로 두고, 나머지(칸·그림)만 왼쪽으로 옮겨 왼쪽 여백 = 오른쪽 여백(카드 오른쪽 끝 x=1845) */
-    const left0=(w-1920*s)/2;
-    const L=left0+92*s,R=w-(left0+(1845+sx0)*s);
-    const shift=Math.max(0,(L-R))*.55; // 화면 px — 완전히 맞추면 너무 왼쪽으로 쏠려 보여서 차이의 55%만 옮김
-    stage.style.left=(left0-shift)+'px';
-    const sx=sx0+shift/s; // 카드·버튼은 옮긴 만큼 다시 오른쪽으로 되돌려 제자리 유지
-    stage.style.setProperty('--sx',sx+'px');
-  }
-  fit();addEventListener('resize',fit);
-})();
-/* ===== 프로젝트 데이터 (내용/이미지는 여기서 수정) =====
-   피그마 원본(node 75:308)의 격자를 셀 단위로 실측해서 그대로 재현함(단어는 실제 프로젝트명의 로마자 표기).
-   가로/세로 교차 지점과 번호(1~6) 순서까지 원본과 동일 — 그래서 배경 장식 애셋도 피그마 원본 좌표를 그대로 쓸 수 있음 */
-const projects=[
-  {t:"소소복담",        tag:"Brand · Package", d:"누구나 쉽게 건강한 식사를 누릴 수 있도록 돕는 정다운 집밥 브랜드",                   img:"", word:"SOSOBOKDAM",   x:4, y:3,dir:"v"}, // 1 세로
-  {t:"국순당 웹사이트 리디자인",  tag:"Web · Redesign",   d:"2009년에 머물러 있던 국순당 웹사이트를 글로벌 시대에 맞게 새롭게 리디자인한 프로젝트", img:"", word:"KOOKSOONDANG",x:16,y:3,dir:"v"}, // 2 세로
-  {t:"AI와 디자인의 상관관계", tag:"Research · Editorial", d:"AI 시대에 디자이너의 역할과 창작 과정이 어떻게 달라지는지 탐구한 실험적인 편집 북", img:"", word:"CORRELATION", x:9, y:0,dir:"v"}, // 3 세로
-  {t:"해잇",            tag:"UX/UI · App",    d:"발표가 막막한 분들을 위한 발표 준비·스피치·피드백 앱",                       img:"", word:"HAEIT",        x:7, y:4,dir:"h"}, // 4 가로
-  {t:"삼토 페스티벌",   tag:"Redesign · Visual",     d:"차별화된 경험 제공과 아이덴티티를 보완하여 지역 축제 유치를 위한 프로젝트",                          img:"", word:"SAMTOFESTIVAL",x:0, y:8,dir:"h"}, // 5 가로
-  {t:"집메이트",        tag:"UX/UI · App",        d:"셀프 인테리어의 시작부터 완성까지 함께하는 커뮤니티 앱, 집메이트",            img:"", word:"ZIPMATE",      x:12,y:12,dir:"h"}, // 6 가로
-];
-/* 회색 블록(DOM 순서: g6,g1,g2,g4,g3,g5) → 연동될 프로젝트 인덱스.
-   AI와 디자인의 상관관계(2번, CORRELATION)는 연결된 이미지가 없고,
-   삼토 페스티벌(4번, SAMTOFESTIVAL)은 허수아비(g4)·장바구니 인물(g3) 두 이미지가 같이 연동됨 */
-const grayMap=[0,3,1,4,4,5,2]; // 마지막 g7 = AI와 디자인의 상관관계(피그마 232:3735)
-
-/* ===== 십자말풀이 생성 ===== */
-const grid=document.getElementById('grid');
-const cells={};
-let maxX=0,maxY=0,minX=Infinity,minY=Infinity;
-projects.forEach((p,i)=>{
-  [...p.word].forEach((ch,k)=>{
-    const x=p.x+(p.dir==='h'?k:0), y=p.y+(p.dir==='v'?k:0), key=x+','+y;
-    maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);minX=Math.min(minX,x);minY=Math.min(minY,y);
-    let el=cells[key];
-    if(!el){
-      el=document.createElement('div');el.className='cell';el.dataset.p='';el.dataset.ch=ch;el.dataset.key=key;
-      el.style.left=`calc(var(--c)*${x})`;el.style.top=`calc(var(--c)*${y})`;
-      grid.appendChild(el);cells[key]=el;
-    }
-    el.dataset.p+=i+',';if(el.dataset.p.split(',').filter(Boolean).length>1)el.classList.add('x'); // 교차 칸(피그마처럼 조금 더 밝게)
-    if(k===0){const s=document.createElement('sup');s.textContent=i+1;el.appendChild(s);}
-  });
-});
-const gridPxW=60*(maxX+1),gridPxH=60*(maxY+1);
-grid.style.width=gridPxW+'px';grid.style.height=gridPxH+'px';
-const all=[...grid.children]; // 격자선 SVG를 넣기 전에 셀 목록부터 확정(안 그러면 SVG까지 '칸'으로 잘못 섞임)
-// 격자선은 칸마다 따로 그리지 않고 SVG 하나에 선분만 모아서 그림: 내부에서 맞닿는 경계는 한쪽 칸의
-// 오른쪽/아래쪽 선으로만 한 번 그리고(항상 그림), 바깥 테두리(이웃이 없는 쪽)만 위쪽/왼쪽 선을 추가로 그림
-// → 모든 경계가 정확히 한 번씩만, 하나의 렌더링 패스로 그려져 확대해도 모서리가 어긋나지 않음
-{
-  const svgNS='http://www.w3.org/2000/svg';var lineOf=window.__lineOf={};
-  const svg=document.createElementNS(svgNS,'svg');
-  svg.setAttribute('class','gridlines');
-  svg.setAttribute('width',gridPxW);svg.setAttribute('height',gridPxH);
-  const addLine=(x1,y1,x2,y2,a,b)=>{ // a·b = 이 선을 사이에 둔 두 칸(파도타기 때 그 칸의 선만 잠깐 숨기려고 기록)
-    const ln=document.createElementNS(svgNS,'line');
-    ln.setAttribute('x1',x1);ln.setAttribute('y1',y1);ln.setAttribute('x2',x2);ln.setAttribute('y2',y2);
-    (lineOf[a]=lineOf[a]||[]).push(ln);if(b)(lineOf[b]=lineOf[b]||[]).push(ln);
-    svg.appendChild(ln);
-  };
-  Object.keys(cells).forEach(key=>{
-    const [x,y]=key.split(',').map(Number),px=x*60,py=y*60;
-    addLine(px,py+60,px+60,py+60,key,x+','+(y+1)); // 아래쪽 선(항상)
-    addLine(px+60,py,px+60,py+60,key,(x+1)+','+y); // 오른쪽 선(항상)
-    if(!cells[x+','+(y-1)])addLine(px,py,px+60,py,key); // 위쪽 이웃 없으면 위쪽 선도
-    if(!cells[(x-1)+','+y])addLine(px,py,px,py+60,key); // 왼쪽 이웃 없으면 왼쪽 선도
-  });
-  grid.appendChild(svg);
-}
-// 격자 자체가 이제 피그마 원본과 셀 단위로 동일한 배치라서, 배경 장식(.g1~.g6)은 피그마 실측 좌표를 CSS에 그대로 박아두면 됨(별도 보정 불필요)
-/* 칸 선택(클릭) + 키보드 타이핑 지원. 교차 칸을 다시 클릭하면 가로↔세로 방향이 바뀜(games.hankookilbo.com/crossword 방식) */
-let selKey=null, selProj=null;
-function setSel(key,proj){
-  selKey=key;selProj=proj;
-  document.querySelectorAll('.cell.selcell').forEach(c=>c.classList.remove('selcell'));
-  const el=cells[key];if(el)el.classList.add('selcell');
-  show(proj);
-  updateHintButtons();
-  window.deckGo&&deckGo(proj); // 칸을 누르면 단서 카드도 그 단어로 넘어감
-}
-function selectCell(key){
-  const el=cells[key];if(!el)return;
-  const ids=el.dataset.p.split(',').filter(Boolean).map(Number);
-  if(!ids.length)return;
-  const proj=(selKey===key&&ids.length>1)?ids[(ids.indexOf(selProj)+1)%ids.length]:ids[0];
-  setSel(key,proj);
-}
-function keyXY(key){const[x,y]=key.split(',').map(Number);return{x,y};}
-function moveInWord(delta){
-  if(selProj==null||!selKey)return;
-  const p=projects[selProj],{x,y}=keyXY(selKey);
-  const idx=(p.dir==='h'?x-p.x:y-p.y)+delta;
-  if(idx<0||idx>=p.word.length)return;
-  const nx=p.x+(p.dir==='h'?idx:0),ny=p.y+(p.dir==='v'?idx:0),nkey=nx+','+ny;
-  if(cells[nkey])setSel(nkey,selProj);
-}
-function moveGrid(dx,dy){
-  if(!selKey)return;
-  const{x,y}=keyXY(selKey),nkey=(x+dx)+','+(y+dy),el=cells[nkey];
-  if(!el)return;
-  const ids=el.dataset.p.split(',').filter(Boolean).map(Number);
-  setSel(nkey,ids.includes(selProj)?selProj:ids[0]);
-}
-all.forEach(el=>{
-  const ids=el.dataset.p.split(',').filter(Boolean).map(Number);
-  el.addEventListener('mouseenter',()=>show(ids[0])); // 강조(focusArt)는 아래 마우스 추적기가 담당
-  el.addEventListener('click',()=>{
-    if(el.classList.contains('portal'))return goProject(+el.dataset.go); // 빙글 도는 칸 = 그 프로젝트 상세 페이지로 가는 버튼
-    selectCell(el.dataset.key);
-  });
-});
-/* 단어(칸·카드·그림)에 마우스를 올리면 그 프로젝트 그림만 또렷하게 강조하고,
-   나머지 그림은 흑백 + 흐림 + 옅게 → 지금 보는 프로젝트가 눈에 띄게. 마우스가 빠지면 원래대로 */
-function focusArt(i){
-  const grays=[...document.querySelectorAll('.gray')];
-  const has=i!=null&&projectSolved(i); // 그 단어를 맞혔을 때만 강조(그림이 없는 단어도 나머지를 흑백·흐림으로)
-  document.getElementById('cwStage').classList.toggle('art-focus',has);
-  grays.forEach((g,k)=>g.classList.toggle('focus',has&&grayMap[k]===i));
-  // 십자말풀이 칸도 같이: 강조 중인 단어의 칸에만 표시(나머지는 CSS에서 흑백 처리)
-  const mine=has?new Set(wordCells(i)):new Set();
-  document.querySelectorAll('.cell').forEach(c=>c.classList.toggle('focus-w',mine.has(c)));
-}
-// (칸에서 마우스가 빠질 때의 강조 해제도 아래 마우스 추적기가 담당)
-/* 단어를 맞히면 그 단어의 칸 중 하나(다른 단어와 겹치지 않는 칸)를 골라 가끔 빙글 도는 '버튼 칸'으로 만듦.
-   누르면 화면이 밝게 덮이며 그 프로젝트의 상세 페이지(project.html?p=번호)로 넘어감 */
-/* 버튼 칸 글자 밑 도형(피그마 node 144:1602, 1~6번 순서): 1 뱃지별, 2 항아리, 3 반짝별, 4 마이크, 5 꽃(기존 그대로), 6 집 */
-const PORTAL_ICONS=["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 47 46'%3E%3Cpath d='M23.1426 0L29.4038 6.29752L38.2481 5.49796L38.9965 14.3468L46.2856 19.4193L41.171 26.6789L43.4942 35.25L34.9098 37.5236L31.1801 45.5828L23.1426 41.8065L15.1051 45.5828L11.3754 37.5236L2.79098 35.25L5.11419 26.6789L-0.000404358 19.4193L7.28868 14.3468L8.03707 5.49796L16.8814 6.29752L23.1426 0Z'/%3E%3C/svg%3E", "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 39 54'%3E%3Cpath d='M9.16862 0.104369C11.3341 0.00882645 29.085 -0.137439 29.8205 0.283012C29.9659 1.95908 23.1039 6.26728 25.548 10.2322C29.0166 15.6833 33.9352 19.0118 36.8862 25.011C41.4483 34.2847 38.6124 48.5665 28.5086 53.1805C25.4749 54.1568 17.358 54.0802 14.0248 53.8616C10.5062 53.6308 7.74164 52.0654 5.45211 49.4735C2.65426 46.306 1.00578 42.4963 0.335622 38.3707C-2.50621 20.8764 13.6225 15.0969 13.996 8.37544C14.1131 6.27127 12.4164 4.57446 11.0844 3.13303C10.3479 2.33599 9.1164 1.23142 9.16862 0.104369Z'/%3E%3C/svg%3E", "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 59 59'%3E%3Cpath d='M28.3374 0.740749C28.6556 -0.247185 30.2507 -0.247184 30.5688 0.74075C32.1637 5.69309 35.42 14.2775 40.0244 18.8819C44.6287 23.4862 53.2132 26.7425 58.1655 28.3374C59.1534 28.6556 59.1534 30.2507 58.1655 30.5688C53.2132 32.1637 44.6287 35.42 40.0244 40.0244C35.42 44.6287 32.1637 53.2132 30.5688 58.1655C30.2507 59.1534 28.6556 59.1534 28.3374 58.1655C26.7425 53.2132 23.4862 44.6287 18.8819 40.0244C14.2775 35.42 5.69309 32.1637 0.740749 30.5688C-0.247185 30.2507 -0.247184 28.6556 0.74075 28.3374C5.69309 26.7425 14.2775 23.4862 18.8819 18.8819C23.4862 14.2775 26.7425 5.69309 28.3374 0.740749Z'/%3E%3C/svg%3E", "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Cpath d='M21.0086 4.93563C27.5894 -1.64521 38.2598 -1.64521 44.8406 4.93563C51.4211 11.5165 51.4212 22.186 44.8406 28.7667C40.9014 32.7059 35.497 34.2856 30.3816 33.5089L11.8553 49.296C11.0615 49.9724 9.88076 49.926 9.14336 49.1886L0.585742 40.63C-0.151326 39.8926 -0.198743 38.7127 0.477344 37.919L16.2654 19.3907C15.4899 14.2765 17.0705 8.87396 21.0086 4.93563Z'/%3E%3C/svg%3E", null, "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 54 46'%3E%3Cpath d='M25.6572 0.522461C26.4209 -0.174361 27.5899 -0.174404 28.3535 0.522461L53.3545 23.3369C54.7034 24.5679 53.8321 26.8145 52.0059 26.8145H47.084V43.3916C47.084 44.4962 46.1886 45.3916 45.084 45.3916H8.94727C7.84291 45.3913 6.94727 44.496 6.94727 43.3916V26.8145H2.00391C0.177693 26.8145 -0.692715 24.5679 0.65625 23.3369L25.6572 0.522461Z'/%3E%3C/svg%3E"];
-const FLOWER_COLORS=['#FF8FA6','#FFB45E','#83B2FF','#5ED3A2','#FF928C','#B39BFF']; // 1 핑크, 2 노랑, 3 하늘, 4 민트, 5 피치, 6 라벤더 단어 위의 꽃 색
-function markPortal(i){
-  if(document.querySelector(`.cell.portal[data-go="${i}"]`))return;
-  const own=wordCells(i).filter(el=>el&&el.dataset.p.split(',').filter(Boolean).length===1&&!el.classList.contains('portal'));
-  const pool=own.length?own:wordCells(i).filter(el=>el&&!el.classList.contains('portal'));
-  if(!pool.length)return;
-  const el=pool[Math.floor(Math.random()*pool.length)];
-  el.classList.add('portal');el.dataset.go=i;el.title=projects[i].t+' 자세히 보기';
-  el.style.setProperty('--spin-delay',(Math.random()*6).toFixed(2)+'s');
-  // 두께 있는 정육면체 만들기: 앞/뒤는 글자+꽃(첫 칸이면 번호도), 양옆은 ↗
-  const sup=el.querySelector('sup'),lf=()=>`<span>${el.dataset.ch}</span>${sup?`<sup>${sup.textContent}</sup>`:''}`;
-  const cube=document.createElement('div');cube.className='cube'+(projects[i].dir==='h'?' cube-x':''); // 가로 단어는 세로(위아래)로 굴러감
-  cube.innerHTML=`<div class="f front face-l">${lf()}</div><div class="f right face-a"><svg viewBox="0 0 12 12"><path d="M1 11L11 1M2.5 1H11V9.5"/></svg></div><div class="f back face-l">${lf()}</div><div class="f left face-a"><svg viewBox="0 0 12 12"><path d="M1 11L11 1M2.5 1H11V9.5"/></svg></div>`;
-  el.appendChild(cube);
-  // 도는 칸 = 상세 페이지 입구라는 안내 말풍선(마우스를 올리거나, 처음 맞혔을 때 잠깐 보임)
-  const tip=document.createElement('span');tip.className='pt-tip';tip.innerHTML='눌러서 프로젝트 보기 <b>↗</b>';el.appendChild(tip);
-  if(!window.__quiet&&!window.__tipShown){window.__tipShown=true;setTimeout(()=>{tip.classList.add('show');setTimeout(()=>tip.classList.remove('show'),5200);},1400);}
-  el.style.setProperty('--fc',FLOWER_COLORS[i%FLOWER_COLORS.length]);
-  if(PORTAL_ICONS[i])el.style.setProperty('--shape',`url("${PORTAL_ICONS[i]}")`);else el.style.removeProperty('--shape'); // 칸 바탕(단어 색)보다 진한 같은 계열의 꽃
-}
-function goProject(i){
-  try{sessionStorage.setItem('pf-return','1');}catch(e){} // 상세 페이지에서 돌아오면(새로 불러와도) 십자말풀이 화면으로 바로
-  document.body.classList.add('leaving');
-  setTimeout(()=>{location.href='project.html?p='+i;},550);
-}
-window.addEventListener('pageshow',e=>{document.body.classList.remove('leaving');if(e.persisted){try{sessionStorage.removeItem('pf-return');}catch(err){}}}); // 뒤로가기로 돌아왔을 때 덮개 걷기(화면 상태가 그대로 살아 있으면 복원 표시도 지움)
-const RAINBOW=[[255,209,220],[255,222,196],[255,244,184],[201,245,227],[205,230,255]]; // 연분홍, 살구, 연노랑, 민트, 하늘색
-function rainbowAt(t){
-  const f=t*(RAINBOW.length-1),i=Math.min(RAINBOW.length-2,Math.floor(f)),u=f-i,a=RAINBOW[i],b=RAINBOW[i+1];
-  return `rgb(${a.map((v,j)=>Math.round(v+(b[j]-v)*u)).join(',')})`;
-}
-/* 단어별 빛 색 = 첫 화면 스포트라이트 색(두 색 그라데이션 + 번짐 색). 빛이 들어간 단어는 그 빛 색
-   (소소복담=핑크 육각형, 국순당=파랑 네잎, 해잇=초록 별), 나머지는 같은 톤으로 맞춘 하늘·살구·라벤더 */
-const WORD_GLOW=[
-  {a:'#FFA5AF',b:'#FFF6C3',g:'255,133,176'}, // 소소복담: 핑크 육각형
-  {a:'#6F9DEB',b:'#D9F1EB',g:'75,132,225'},  // 국순당: 파랑 네잎
-  {a:'#F3EC7C',b:'#FFFBD8',g:'238,222,100'}, // 상관관계: 은은한 노랑(별 빛의 연노랑 쪽)
-  {a:'#83FF9E',b:'#EFFFB0',g:'110,235,150'}, // 해잇: 초록 별
-  {a:'#FFBE7A',b:'#FFF1C4',g:'255,170,90'},  // 삼토: 살구
-  {a:'#BFA8FF',b:'#EEE6FF',g:'170,140,255'}, // 집메이트: 라벤더
-];
-/* 고른 단어 하나를 통째로 덮는 빛 판(칸마다 따로 빛나지 않게) — 칸들 아래에 깔리고, 고른 칸은 바탕을 비워 이 판이 보이게 함 */
-const wordGlow=document.createElement('div');wordGlow.className='word-glow';grid.insertBefore(wordGlow,grid.firstChild);
-/* 빛이 꺼질 때 '띡' 하고 사라지지 않고, 첫 화면 스포트라이트가 켜질 때처럼 틱.. 티틱.. 깜빡이다 꺼짐.
-   꺼지는 단어 자리에 빛 판을 하나 복제해 두고(칸 아래), 그 칸들의 바탕도 같은 박자로 빛↔회색을 오감 */
-// 꺼짐: 켜진 채 → 틱(어두워짐) → 한 번 살짝 다시 켜졌다가 → 부드럽게 사라짐. [시점(0~1), 밝기, 다음까지 끊김(true)/부드럽게(false)]
-const GLOW_OFF_MS=420,GLOW_OFF=[[0,1,true],[.2,.18,true],[.36,.72,false],[1,0,false]];
-let glowIdx=null;
-function holdFrames(fn){const fr=[];
-  GLOW_OFF.forEach(([o,a],k)=>{const pv=GLOW_OFF[k-1];if(pv&&pv[2])fr.push(Object.assign({offset:Math.max(0,o-.001)},fn(pv[1])));fr.push(Object.assign({offset:o},fn(a)));});return fr;}
-const rgbaOf=c=>{const m=(c.match(/[\d.]+/g)||[0,0,0,0]).map(Number);return m.length<4?[m[0],m[1],m[2],1]:m;};
-function glowOff(prev,keep,snap){
-  if(prev==null)return;
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;if(reduce)return;
-  const ghost=snap||wordGlow.cloneNode(false);ghost.classList.add('ghost');ghost.classList.add('show');grid.insertBefore(ghost,wordGlow.nextSibling);
-  const T=GLOW_OFF_MS;
-  ghost.animate(holdFrames(a=>({opacity:a})),{duration:T,fill:'forwards'}).onfinish=()=>ghost.remove();
-  wordCells(prev).forEach(c=>{
-    if(!c||(keep&&keep.has(c)))return;
-    const off=rgbaOf(getComputedStyle(c).backgroundColor); // 꺼진 뒤 바탕(회색/맞힌 색)
-    c.animate(holdFrames(a=>({backgroundColor:`rgba(${off[0]},${off[1]},${off[2]},${(off[3]*(1-a)).toFixed(3)})`})),{duration:T});
-  });
-}
-function show(i){
-  const p=projects[i],prevSnap=(glowIdx!=null&&glowIdx!==i)?wordGlow.cloneNode(false):null; // 바뀌기 전 빛 판 모양을 떠 둠
-  // 고른 단어 전체가 하나로 환하게: 단어 자리만큼의 빛 판(스포트라이트 색 그라데이션 + 같은 색 번짐)
-  let gw=WORD_GLOW[i%WORD_GLOW.length];const n=p.word.length,hz=p.dir==='h';
-  if(typeof projectSolved==='function'&&projectSolved(i)){ // 다 채운 단어: 채운 칸 색(WORD_COLORS)을 그대로 따라 빛남
-    const wc=WORD_COLORS[i%WORD_COLORS.length],v=parseInt(wc.slice(1),16),rgb=[v>>16,(v>>8)&255,v&255];
-    gw={a:wc,b:wc,g:rgb.join(',')};
-  }
-  Object.assign(wordGlow.style,{left:`calc(var(--c)*${p.x})`,top:`calc(var(--c)*${p.y})`,width:`calc(var(--c)*${hz?n:1})`,height:`calc(var(--c)*${hz?1:n})`,
-    background:`linear-gradient(${hz?'90deg':'180deg'},${gw.a},${gw.b})`,boxShadow:`0 0 34px 6px rgba(${gw.g},.55),0 0 90px 20px rgba(${gw.g},.18)`});
-  wordGlow.classList.add('show');
-  // 단어를 바꿀 때 칸 바탕이 서서히 바뀌면(투명↔회색) 그 사이 잠깐 어두워졌다 밝아져 보여서, 이 순간만 전환 없이 바로 바꿈
-  grid.classList.add('snap');
-  all.forEach(c=>c.classList.toggle('on',c.dataset.p.split(',').includes(String(i))));
-  if(glowIdx!==i){glowOff(glowIdx,new Set(wordCells(i)),prevSnap);glowIdx=i;} // 이전 단어 빛은 깜빡이며 꺼짐
-  requestAnimationFrame(()=>requestAnimationFrame(()=>grid.classList.remove('snap')));
-  // 퍼즐 전체를 대각선 하나의 무지개로 봄: 왼쪽 위 칸은 연분홍 → 오른쪽 아래 칸은 하늘색.
-  // 마우스를 올린 단어는 자기 자리에 해당하는 색 구간만 보여서, 위쪽 단어는 분홍빛·아래쪽 단어는 파란빛이 됨
-  if(!window.__rbRange){
-    let mx=0,my=0;Object.keys(cells).forEach(k=>{const[x,y]=k.split(',').map(Number);mx=Math.max(mx,x);my=Math.max(my,y);});
-    window.__rbRange=mx+my||1;
-  }
-  wordCells(i).forEach(c=>{if(!c)return;const[x,y]=c.dataset.key.split(',').map(Number);c.style.setProperty('--rb',rainbowAt((x+y)/window.__rbRange));});
-  document.querySelectorAll('.it').forEach(e=>e.classList.toggle('act',+e.dataset.i===i));
-}
-/* 회색 장식 이미지는 더 이상 마우스 호버로 보여주지 않고, 그 단어를 실제로 다 맞혀야 보이게 함 */
-function projectSolved(i){
-  const p=projects[i];
-  return [...p.word].every((ch,k)=>{
-    const x=p.x+(p.dir==='h'?k:0), y=p.y+(p.dir==='v'?k:0), el=cells[x+','+y];
-    return el&&el.querySelector('.ch').textContent===el.dataset.ch;
-  });
-}
-function updateGrayReveal(){
-  document.querySelectorAll('.gray').forEach((g,k)=>g.classList.toggle('cur',projectSolved(grayMap[k])));
-}
-/* 단어 단위 정답 확인: 그 단어의 칸이 전부 채워졌을 때만 채점한다(덜 채워진 상태는 그냥 둠).
-   맞으면 그 단어의 칸을 초록으로 잠그고(교차 칸도 같이 포함되므로 자연히 함께 잠김) 단서 목록에 체크,
-   틀리면 짧게 흔들었다가 원래대로 돌려서 다시 시도할 수 있게 둔다 */
-function wordCells(i){
-  const p=projects[i];
-  return [...p.word].map((ch,k)=>{
-    const x=p.x+(p.dir==='h'?k:0), y=p.y+(p.dir==='v'?k:0);
-    return cells[x+','+y];
-  });
-}
-/* 단어별 정답 색: 1 핑크, 2 노랑, 3 하늘, 4 민트, 5 피치, 6 라벤더.
-   두 단어가 겹치는 칸은 두 단어를 다 맞히면 두 색을 곱하기(multiply)로 섞어서, 투명한 색지 두 장이 겹친 듯한 색이 됨 */
-const WORD_COLORS=['#FFD1DC','#FFF1A8','#CBE3FF','#C4F0DC','#FFD9BD','#E2D8FF'];
-function mulHex(a,b){ // 두 색을 곱하기(multiply)로 섞음
-  const p=h=>[1,3,5].map(k=>parseInt(h.slice(k,k+2),16));
-  const A=p(a),B=p(b);
-  // 순수 곱하기는 탁해져서, 두 색의 평균과 반쯤 섞어 파스텔 느낌을 유지(겹친 티는 나되 칙칙하지 않게)
-  return '#'+A.map((v,k)=>Math.round(.55*(v*B[k]/255)+.45*((v+B[k])/2)).toString(16).padStart(2,'0')).join('');
-}
-function cellColor(el){ // 이 칸이 속한 단어 중 맞힌 단어들의 색(2개면 섞은 색)
-  const ids=el.dataset.p.split(',').filter(Boolean).map(Number).filter(projectSolved);
-  const cols=ids.map(k=>WORD_COLORS[k%WORD_COLORS.length]);
-  return cols.length>1?cols.reduce(mulHex):cols[0];
-}
-/* ===== 단어를 맞혔을 때 축하: 칸이 차례로 톡톡 튀어 오르는 파도 + 팡파레 ===== */
-const celebrated=new Set();
-/* 파도타기: 칸이 튀어 오르는 동안 그 칸에 붙은 격자선(SVG)만 잠깐 숨기고, 칸이 자기 테두리를 달고 통째로 움직임.
-   (격자 전체 선을 숨기고 칸마다 테두리를 그리면, 화면 배율 때문에 1px 선이 군데군데 흐려지거나 사라져 보였음) */
-const lineHide=new Map();
-function hideLines(key,on){
-  (window.__lineOf[key]||[]).forEach(ln=>{
-    const n=(lineHide.get(ln)||0)+(on?1:-1);lineHide.set(ln,n);
-    ln.style.visibility=n>0?'hidden':'';
-  });
-}
-function waveWord(i,delay=0){ // 단어 첫 칸부터 끝 칸까지 차례로 살짝 튀어 오름(칸 테두리까지 통째로)
-  wordCells(i).forEach((el,k)=>{
-    const key=el.dataset.key,d=delay+k*70;
-    setTimeout(()=>hideLines(key,true),d);
-    const an=el.animate(
-      [{transform:'none',boxShadow:'0 0 0 1px #111',zIndex:5},{transform:'translateY(-10px) scale(1.05)',filter:'brightness(1.06) saturate(1.2)',boxShadow:'0 0 0 1px #111',zIndex:5,offset:.35},{transform:'none',boxShadow:'0 0 0 1px #111',zIndex:5}],
-      {duration:700,delay:d,easing:'cubic-bezier(.3,1.1,.5,1)'});
-    an.onfinish=()=>hideLines(key,false);
-  });
-}
-/* 팡파레: 화면 양쪽 아래 모서리에서 폭죽 종이가 화면 가운데 위쪽을 향해 비스듬히 쏟아져 나왔다가,
-   팔랑이며(좌우로 뒤집히며) 천천히 떨어져 사라짐. 화면 기준(position:fixed)이라 십자말풀이 배율과 상관없이 모서리에서 나옴 */
-function fanfare(i,all=false){
-  let layer=document.getElementById('fanfare');
-  if(!layer){layer=document.createElement('div');layer.id='fanfare';document.body.appendChild(layer);}
-  const col=FLOWER_COLORS[i%FLOWER_COLORS.length];
-  // 한 단어: 그 단어 색 위주 / 전부 다 맞혔을 때: 모든 단어 색 + 빛 색을 섞어 다채롭게
-  const cols=all?[...FLOWER_COLORS,...WORD_COLORS,'#FFD45E','#7ADB8C','#4A7CC0','#EE6882','#ffffff']
-               :[col,col,WORD_COLORS[i%WORD_COLORS.length],'#FFD45E','#ffffff',FLOWER_COLORS[(i+2)%6]];
-  const W=innerWidth,H=innerHeight,u=Math.min(W,H)/1000; // 화면 크기에 비례
-  [[0,H,-58],[W,H,-122]].forEach(([x,y,angle],side)=>{
-    for(let k=0;k<80;k++){
-      const e=document.createElement('i');e.className='ff';
-      const kind=k%4,w=(kind<2?6:kind===2?10:8)*u*1.4,h=(kind<2?(18+Math.random()*14):kind===2?10:8)*u*1.4;
-      e.style.width=w+'px';e.style.height=h+'px';e.style.left=(x-w/2)+'px';e.style.top=(y-h/2)+'px';
-      e.style.background=all?cols[Math.random()*cols.length|0]:cols[k%cols.length];
-      if(kind<2)e.style.borderRadius=(w/2)+'px';else if(kind===3)e.style.borderRadius='50%';
-      layer.appendChild(e);
-      const a=(angle+(Math.random()-.5)*30)*Math.PI/180,v=(1700+Math.random()*1300)*u,vx=Math.cos(a)*v,vy=Math.sin(a)*v;
-      const g=380*u,T=2.6+Math.random()*1.2,drag=2.1,kf=[];
-      for(let j=0;j<=14;j++){ // 처음엔 세게 뿜어져 나오고(공기 저항으로 금방 느려짐) 이후엔 중력으로 천천히 팔랑이며 내려옴
-        const t=T*j/14,d=(1-Math.exp(-drag*t))/drag,sway=Math.sin(t*5+k)*30*u*Math.min(1,t);
-        kf.push({transform:`translate(${vx*d+sway}px,${vy*d+g*t*t/2}px) rotate(${(k%2?1:-1)*j*50}deg) scaleX(${Math.cos(j*1.1+k).toFixed(2)})`,opacity:j<11?1:1-(j-11)/3});
-      }
-      e.animate(kf,{duration:T*1000,delay:side*60+Math.random()*140,easing:'linear',fill:'backwards'}).onfinish=()=>e.remove();
-    }
-  });
-}
-function celebrate(i){
-  if(window.__quiet||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const all=projects.every((q,k)=>projectSolved(k));
-  // '자동으로 풀기' 중엔 팡파레를 전부 채워졌을 때 한 번만
-  waveWord(i);
-  if(!autoRunning||all)setTimeout(()=>fanfare(i,all),250);
-  // 전부 다 맞혔으면 여섯 단어가 차례차례 한 번씩 더 파도
-  if(all)projects.forEach((q,k)=>waveWord(k,900+k*220));
-}
-
-function checkWord(i){
-  const els=wordCells(i);
-  if(!els.every(el=>el.querySelector('.ch').textContent))return; // 아직 다 안 채워짐
-  if(projectSolved(i)){
-    els.forEach(el=>{
-      el.style.setProperty('--wc',cellColor(el));
-      el.classList.add('correct','locked');
-    });
-    markPortal(i);
-    window.deckRefresh&&deckRefresh();
-    document.querySelectorAll(`.it[data-i="${i}"]`).forEach(e=>e.classList.add('done'));
-    if(!celebrated.has(i)){celebrated.add(i);celebrate(i);}
-  }else{
-    els.forEach(el=>{
-      el.classList.remove('wrong');void el.offsetWidth; // 애니메이션 재시작을 위해 강제로 리플로우
-      el.classList.add('wrong');
-    });
-    setTimeout(()=>els.forEach(el=>el.classList.remove('wrong')),300);
-  }
-}
-/* 드래그 앤 드롭 + 키보드 + 힌트: 칸에 글자 넣기. 저장은 하지 않음 — 새로고침/재방문 때마다 항상 빈 칸에서 시작.
-   isHint가 true면 힌트 버튼으로 채운 글자라는 표시(회색 글자색)를 남김. 정답으로 잠긴(.locked) 칸은 수정 불가 */
-const putFns={};
-Object.keys(cells).forEach(k=>{
-  const el=cells[k],span=document.createElement('span');span.className='ch';el.appendChild(span);
-  const put=(t,isHint)=>{
-    if(el.classList.contains('locked'))return;
-    const c=[...(t||'').trim()][0]||'';
-    span.textContent=c;
-    span.classList.toggle('hint-ch',!!(isHint&&c));
-    checkSolved();updateGrayReveal();
-    el.dataset.p.split(',').filter(Boolean).forEach(i=>checkWord(+i));
-    updateHintButtons();
-    updateAutoBtn();
-  };
-  putFns[k]=put;
-  el.addEventListener('dragover',e=>{if(el.classList.contains('locked'))return;e.preventDefault();el.classList.add('over')});
-  el.addEventListener('dragleave',()=>el.classList.remove('over'));
-  el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('over');put(e.dataTransfer.getData('text/plain'))});
-  el.addEventListener('dblclick',()=>put(''));
-});
-/* 키보드로 타이핑: 칸을 클릭해 선택한 뒤 알파벳을 치면 채워지고 단어 방향으로 자동 이동,
-   백스페이스는 지우고 한 칸 뒤로, 방향키는 격자 위에서 자유롭게 이동. 잠긴 칸은 그냥 건너뜀 */
-document.addEventListener('keydown',e=>{
-  if(!selKey||!cells[selKey])return;
-  if(e.key.length===1&&/[a-zA-Z]/.test(e.key)){
-    putFns[selKey](e.key.toUpperCase());
-    moveInWord(1);
-    e.preventDefault();
-  }else if(e.key==='Backspace'){
-    const editable=!cells[selKey].classList.contains('locked');
-    if(editable&&cells[selKey].querySelector('.ch').textContent){
-      putFns[selKey]('');
-    }else{
-      moveInWord(-1);
-      if(selKey&&!cells[selKey].classList.contains('locked'))putFns[selKey]('');
-    }
-    e.preventDefault();
-  }else if(e.key==='ArrowLeft'){moveGrid(-1,0);e.preventDefault();}
-  else if(e.key==='ArrowRight'){moveGrid(1,0);e.preventDefault();}
-  else if(e.key==='ArrowUp'){moveGrid(0,-1);e.preventDefault();}
-  else if(e.key==='ArrowDown'){moveGrid(0,1);e.preventDefault();}
-});
-/* 힌트 버튼: 한 글자만 열기 / 선택된 단어 전체 열기. 선택된 칸·단어가 없거나 이미 다 맞혔으면 비활성화 */
-const btnHintLetter=document.getElementById('cwHintLetter'),btnHintWord=document.getElementById('cwHintWord');
-function updateHintButtons(){
-  const noSel=selKey==null;
-  btnHintLetter.disabled=noSel||cells[selKey].classList.contains('locked');
-  btnHintWord.disabled=noSel||projectSolved(selProj);
-}
-btnHintLetter.addEventListener('click',()=>{
-  if(selKey==null)return;
-  putFns[selKey](cells[selKey].dataset.ch,true);
-});
-btnHintWord.addEventListener('click',()=>{
-  if(selProj==null)return;
-  wordCells(selProj).forEach(el=>putFns[el.dataset.key](el.dataset.ch,true));
-});
-updateHintButtons();
-/* 십자말풀이 자동으로 풀기: 한 번에 다 채우지 않고 1번 단어부터 차례대로, 글자도 하나씩 타이핑하듯 채움.
-   이미 맞게 들어가 있는 칸(다른 단어와 겹치는 칸 등)은 건너뜀 */
-const AUTO_LETTER_MS=70;  // 글자 사이 간격
-const AUTO_WORD_MS=350;   // 단어 사이 쉬는 시간
-let autoRunning=false;
-const cwAutoBtn=document.getElementById('cwAuto');
-const AUTO_LABEL=cwAutoBtn.textContent,RESET_LABEL='십자말풀이 다시 풀기';
-/* 칸이 전부 채워져 있으면 버튼을 '리셋' 버튼으로 바꿈 (자동 채우는 중에는 바꾸지 않음) */
-function allFilled(){return Object.keys(cells).every(k=>cells[k].querySelector('.ch').textContent);}
-function updateAutoBtn(){
-  if(autoRunning)return;
-  const full=allFilled();
-  cwAutoBtn.classList.toggle('is-reset',full);
-  cwAutoBtn.textContent=full?RESET_LABEL:AUTO_LABEL;
-}
-/* 단어 하나만 비우기(카드의 '다시 풀기'): 그 단어 칸의 글자·정답 표시·버튼 칸(정육면체)을 지움.
-   다른 맞힌 단어와 겹치는 칸은 그 단어 글자라 그대로 두고 색만 그 단어 색으로 */
-function clearWord(i){
-  const portal=document.querySelector(`.cell.portal[data-go="${i}"]`);
-  if(portal){portal.classList.remove('portal');delete portal.dataset.go;portal.removeAttribute('title');portal.querySelector('.cube')?.remove();portal.querySelector('.pt-tip')?.remove();}
-  const els=wordCells(i);
-  els.forEach(el=>{
-    const others=el.dataset.p.split(',').filter(Boolean).map(Number).filter(k=>k!==i&&projectSolved(k));
-    if(others.length)return;
-    el.classList.remove('correct','locked','wrong','over');el.style.removeProperty('--wc');
-    const sp=el.querySelector('.ch');sp.textContent='';sp.classList.remove('hint-ch');
-  });
-  els.forEach(el=>{if(el.classList.contains('correct'))el.style.setProperty('--wc',cellColor(el));}); // 남은 겹침 칸은 남은 단어 색으로
-  document.querySelectorAll(`.it[data-i="${i}"]`).forEach(e=>e.classList.remove('done'));
-  celebrated.delete(i); // 다시 맞히면 또 축하
-  cwSolved=false;
-  updateGrayReveal();updateHintButtons();updateAutoBtn();
-  window.deckRefresh&&deckRefresh();
-  focusArt(null);
-}
-/* 리셋: 채운 글자·정답 잠금·힌트 표시·단서 체크·회색 이미지까지 전부 처음 상태로 되돌림 */
-function resetCrossword(){
-  Object.keys(cells).forEach(k=>{
-    const el=cells[k],sp=el.querySelector('.ch');
-    el.classList.remove('correct','locked','wrong','over');
-    el.style.removeProperty('--wc');
-    el.classList.remove('portal');delete el.dataset.go;el.removeAttribute('title');
-    el.querySelector('.cube')?.remove();el.querySelector('.pt-tip')?.remove();
-    sp.textContent='';sp.classList.remove('hint-ch');
-  });
-  document.querySelectorAll('.it.done').forEach(e=>e.classList.remove('done'));
-  celebrated.clear();
-  cwSolved=false;
-  updateGrayReveal();updateHintButtons();updateAutoBtn();
-  window.deckRefresh&&deckRefresh();
-  window.Scenes&&Scenes.refresh();
-  if(started)reveal(); // 초기화하면 칸들이 빛방울에서 박스로 떨어지는 등장 모션을 처음부터 다시 보여줌
-  if(cwArrived&&window.scrollY>=cwSection.offsetTop-1){ // 십자말풀이 화면에 있으면 다시 스크롤 잠금
-    window.scrollTo({top:cwSection.offsetTop,left:0,behavior:'instant'});
-    document.body.classList.add('lock');
-  }
-}
-cwAutoBtn.addEventListener('click',()=>{
-  if(autoRunning)return;
-  if(cwAutoBtn.classList.contains('is-reset'))return resetCrossword();
-  autoRunning=true;cwAutoBtn.disabled=true;
-  const steps=[];
-  projects.forEach((p,i)=>{
-    wordCells(i).forEach(el=>steps.push({el,gap:AUTO_LETTER_MS}));
-    if(steps.length)steps[steps.length-1].endOfWord=true;
-  });
-  let n=0;
-  (function next(){
-    while(n<steps.length){
-      const st=steps[n++],el=st.el;
-      if(el.querySelector('.ch').textContent===el.dataset.ch){ // 이미 정답이면 건너뛰되, 단어 끝이면 잠깐 쉼
-        if(st.endOfWord)return setTimeout(next,AUTO_WORD_MS);
-        continue;
-      }
-      putFns[el.dataset.key](el.dataset.ch);
-      return setTimeout(next,st.endOfWord?AUTO_WORD_MS:st.gap);
-    }
-    autoRunning=false;cwAutoBtn.disabled=false;
-    updateAutoBtn();
-  })();
-});
-/* 십자말풀이를 다 풀기 전에는 그 섹션에서 위/아래 어느 쪽으로도 스크롤이 안 되게 완전히 막음(인트로의
-   스포트라이트 퍼즐과 같은 방식). 아래로 넘어가는 것만 막고 위로는 열어두면, 다시 스크롤하려 할 때마다
-   위치를 되돌리는 보정이 반복돼 화면이 드득거리는 느낌이 남 — 그래서 도착하는 순간 body에 이미 있는
-   .lock(overflow:hidden)을 그대로 씌워서 아예 스크롤 자체가 안 일어나게 함 */
-let cwSolved=false;
-function checkSolved(){
-  cwSolved=Object.keys(cells).every(k=>cells[k].querySelector('.ch').textContent===cells[k].dataset.ch);
-  if(cwSolved)document.body.classList.remove('lock');
-  try{sessionStorage.setItem('pf-solved',JSON.stringify(projects.map((p,i)=>i).filter(projectSolved)));}catch(e){}
-  window.Scenes&&Scenes.refresh();
-}
-const cwSection=document.getElementById('cw');
-window.addEventListener('scroll',()=>{
-  if(cwSolved)return;
-  const cwTop=cwSection.offsetTop;
-  if(window.scrollY>=cwTop-1){
-    cwArrived=true;
-    window.scrollTo({top:cwTop,left:0,behavior:'instant'});
-    document.body.classList.add('lock');
-  }
-});
-/* 화면 크기를 바꾸면 히어로 핀 구간 길이(화면 높이의 130%)가 달라져 십자말풀이 위치(offsetTop)도 바뀌는데,
-   스크롤이 잠겨(.lock) 있어서 예전 위치에 그대로 멈춰 빈 화면이 보이던 문제 → 크기가 바뀌면 새 위치로 다시 맞춤 */
-let cwArrived=false;
-function resnapCw(){
-  if(!cwArrived||cwSolved)return;
-  window.scrollTo({top:cwSection.offsetTop,left:0,behavior:'instant'});
-}
-addEventListener('resize',()=>requestAnimationFrame(resnapCw));
-if(window.ScrollTrigger)ScrollTrigger.addEventListener('refresh',resnapCw); // 핀 길이가 다시 계산된 직후에도 한 번 더
-const chipBox=document.getElementById('chips');
-[...new Set(projects.map(p=>p.word).join('').split(''))].forEach(ch=>{
-  const c=document.createElement('div');c.className='chip';c.draggable=true;c.textContent=ch;
-  c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',ch);e.dataTransfer.effectAllowed='copy'});
-  chipBox.appendChild(c);
-});
-document.querySelector('.cw-stage').addEventListener('mouseleave',()=>{
-  grid.classList.add('snap');all.forEach(c=>c.classList.remove('on'));wordGlow.classList.remove('show');glowOff(glowIdx);glowIdx=null;
-  requestAnimationFrame(()=>requestAnimationFrame(()=>grid.classList.remove('snap')));
-  document.querySelectorAll('.it').forEach(e=>e.classList.remove('act'));
-});
-/* 소개 패널 */
-function buildPanel(el,label,idx){
-  el.innerHTML=`<h4>${label}</h4>`+idx.map(i=>{const p=projects[i];return `<div class="it" data-i="${i}"><div class="r1"><span class="n">0${i+1}</span><span class="t">${p.t}</span><span class="g">${p.tag}</span></div><div class="d">${p.d}</div></div>`}).join('');
-  el.querySelectorAll('.it').forEach(e=>{e.addEventListener('mouseenter',()=>show(+e.dataset.i));e.addEventListener('click',()=>show(+e.dataset.i));});
-}
-buildPanel(document.getElementById('pa'),'가로',projects.map((p,i)=>p.dir==='h'?i:-1).filter(i=>i>=0));
-buildPanel(document.getElementById('pd'),'세로',projects.map((p,i)=>p.dir==='v'?i:-1).filter(i=>i>=0));
-/* ===== 단서 카드 덱(피그마 node 151:2220 카드 디자인, 1.5배 크기) =====
-   오른쪽 위에 카드 한 묶음(맨 앞 1장 + 뒤로 2장이 아래로 살짝 비침).
-   카드 = 왼쪽: 그 단어의 도형(맞히면 색) + 세로 번호 / 가운데: 제목, 글자 수만큼의 빈 칸(맞히면 글자가 채워짐), 설명
-          오른쪽 위: ↗ 상자 → 상세 페이지 / 아래 양쪽: 이전·다음 카드 단어의 도형 위에 ← → (그 카드로 넘어감)
-   카드를 옆으로 끌어도 넘어가고, 마우스를 올리면 그 단어가 격자에서 하이라이트, 누르면 첫 빈칸 선택. 격자 칸을 눌러도 카드가 따라옴 */
-(()=>{
-  const stage=document.getElementById('cwStage'),N=projects.length;
-  const deck=document.createElement('div');deck.className='deck';
-  deck.innerHTML='<div class="dk-cards"></div>';
-  stage.appendChild(deck);
-  const wrap=deck.querySelector('.dk-cards');
-  const shapeOf=i=>PORTAL_ICONS[i]?`url("${PORTAL_ICONS[i]}")`:null;
-  const AR_UR='<svg viewBox="0 0 12 12"><path d="M1 11L11 1M2.5 1H11V9.5"/></svg>';
-  const AR_L='<svg viewBox="0 0 24 24"><path d="M19 12H5M11 5l-7 7 7 7"/></svg>';
-  const AR_R='<svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>';
-  const cards=projects.map((p,i)=>{
-    const c=document.createElement('div');c.className='dk-card';c.dataset.i=i;
-    const prev=(i-1+N)%N,next=(i+1)%N;
-    if(shapeOf(i))c.style.setProperty('--shape',shapeOf(i));
-    if(shapeOf(prev))c.style.setProperty('--prev-shape',shapeOf(prev));
-    if(shapeOf(next))c.style.setProperty('--next-shape',shapeOf(next));
-    c.style.setProperty('--fc',FLOWER_COLORS[i%FLOWER_COLORS.length]);
-    c.style.setProperty('--prev-fc',FLOWER_COLORS[prev%FLOWER_COLORS.length]);c.style.setProperty('--next-fc',FLOWER_COLORS[next%FLOWER_COLORS.length]);
-    const label=[...(p.dir==='h'?'가로':'세로'),String(i+1)].map(ch=>`<b>${ch}</b>`).join('');
-    c.innerHTML=`<div class="dk-side"><i class="dk-ic"></i><span class="dk-no">${label}</span></div>`+
-      `<div class="dk-body"><h5>${p.t}</h5><div class="dk-boxes" style="--n:${p.word.length}">${[...p.word].map(()=>'<span></span>').join('')}</div><div class="dk-en">${p.word}</div><p>${p.d}</p><p class="dk-tip">칸에서 돌아가는 <b>↗</b>를 누르면 프로젝트 보기</p></div>`+
-      `<button class="dk-open" type="button">문제 풀기</button>`+
-      `<button class="dk-prev" type="button" aria-label="이전 카드: ${projects[prev].t}"><i></i>${AR_L}</button>`+
-      `<button class="dk-next" type="button" aria-label="다음 카드: ${projects[next].t}"><i></i>${AR_R}</button>`;
-    // 오른쪽 위 버튼: 아직 못 맞힌 단어면 '문제 풀기'(정답을 칸에 채움), 맞힌 단어면 '다시 풀기'(그 단어만 비워서 다시 풀기)
-    c.querySelector('.dk-open').addEventListener('click',e=>{
-      e.stopPropagation();
-      if(projectSolved(i))clearWord(i);
-      else{ // 자동 풀기처럼 한 글자씩 타이핑하듯 채움(이미 맞는 칸은 건너뜀). 힌트 회색이 아니라 직접 푼 것처럼 검정 글자로
-        if(c.dataset.typing)return;c.dataset.typing='1';
-        const todo=wordCells(i).filter(el=>el.querySelector('.ch').textContent!==el.dataset.ch);
-        todo.forEach((el,k)=>setTimeout(()=>{
-          putFns[el.dataset.key](el.dataset.ch);
-          if(k===todo.length-1)delete c.dataset.typing;
-        },k*AUTO_LETTER_MS*1.6));
-        if(!todo.length)delete c.dataset.typing;
-      }
-    });
-    c.querySelector('.dk-prev').addEventListener('click',e=>{e.stopPropagation();step(-1);});
-    c.querySelector('.dk-next').addEventListener('click',e=>{e.stopPropagation();step(1);});
-    c.addEventListener('mouseenter',()=>{if(order[0]===i){show(i);document.querySelector(`.cell.portal[data-go="${i}"]`)?.classList.add('tipon');}}); // 강조(focusArt)는 마우스 추적기가 담당. 맞힌 단어면 그 도는 칸 말풍선도 같이
-    c.addEventListener('mouseleave',()=>document.querySelectorAll('.cell.portal.tipon').forEach(e=>e.classList.remove('tipon')));
-    c.addEventListener('click',()=>{
-      if(dragMoved)return;
-      if(order[0]!==i){go(i);return;}
-      const el=wordCells(i).find(el=>!el.querySelector('.ch').textContent)||wordCells(i)[0];
-      if(el)setSel(el.dataset.key,i);
-    });
-    wrap.appendChild(c);return c;
-  });
-  let order=projects.map((_,i)=>i);
-  function layout(){order.forEach((i,pos)=>{const c=cards[i];c.dataset.pos=Math.min(pos,3);c.style.zIndex=10-pos;});}
-  function go(i){if(order[0]===i)return;const k=order.indexOf(i);order=order.slice(k).concat(order.slice(0,k));layout();window.__deckFocus&&__deckFocus(i);} // 카드에 마우스가 있으면 강조도 새 앞 카드 프로젝트로
-  /* 한 장씩 넘길 때: 옆으로 빠지지 않고, 맨 앞 카드가 왼쪽으로 빠졌다가 묶음 뒤로 쏙 들어감(다음).
-     이전은 반대로 맨 뒤 카드가 왼쪽으로 빠져나와서 맨 앞에 내려앉음 */
-  const POS=['rotate(-.8deg)','translate(5px,5px) rotate(1.3deg)','translate(-4px,9px) rotate(-2.1deg)']; // style.css의 data-pos 0~2와 같은 값
-  const FLIP_MS=700;let flipping=false;
-  function step(d){
-    if(flipping)return;
-    const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const target=(order[0]+d+N)%N;
-    if(reduce||!Element.prototype.animate){go(target);return;}
-    flipping=true;
-    if(d>0){
-      const f=cards[order[0]];
-      go(target);f.style.zIndex=20;
-      f.classList.add('flipping');
-      f.animate([{transform:POS[0],opacity:1},{transform:'translate(-62%,-4%) rotate(-7deg) scale(.97)',opacity:1,offset:.42},{transform:POS[2],opacity:1,offset:.85},{transform:POS[2],opacity:0}],{duration:FLIP_MS,easing:'cubic-bezier(.45,0,.25,1)'});
-      setTimeout(()=>{f.style.zIndex='';f.classList.remove('flipping');layout();},FLIP_MS*.45);
-    }else{
-      const c=cards[target],old=cards[order[0]];
-      old.classList.add('flipping'); // 들어오는 카드가 뒤에서 빠져나오는 동안 기존 앞 카드 내용은 그대로 보이게
-      go(target);c.style.zIndex=0;
-      setTimeout(()=>old.classList.remove('flipping'),FLIP_MS*.5);
-      c.animate([{transform:POS[2],opacity:0},{opacity:1,offset:.2},{transform:'translate(-62%,-4%) rotate(-7deg) scale(.97)',offset:.5},{transform:POS[0],opacity:1}],{duration:FLIP_MS,easing:'cubic-bezier(.45,0,.25,1)'});
-      setTimeout(()=>{c.style.zIndex='';layout();},FLIP_MS*.5);
-    }
-    setTimeout(()=>{flipping=false;},FLIP_MS);
-  }
-  function refresh(){
-    projects.forEach((p,i)=>{
-      const solved=projectSolved(i),c=cards[i];
-      c.classList.toggle('solved',solved);
-      c.classList.toggle('prev-solved',projectSolved((i-1+N)%N));c.classList.toggle('next-solved',projectSolved((i+1)%N)); // 화살표 도형도 그 단어를 맞히면 그 색으로
-      c.querySelectorAll('.dk-boxes span').forEach((b,k)=>b.textContent=solved?p.word[k]:'');
-      c.querySelector('.dk-open').textContent=solved?'다시 풀기':'문제 풀기';
-    });
-  }
-  // 옆으로 끌어서 넘기기
-  let sx=0,dx=0,dragging=false,dragMoved=false;
-  wrap.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;dragging=true;dragMoved=false;sx=e.clientX;dx=0;});
-  addEventListener('pointermove',e=>{
-    if(!dragging)return;dx=e.clientX-sx;if(Math.abs(dx)>6)dragMoved=true;
-    const f=cards[order[0]];f.style.transition='none';f.style.transform=`translateX(${dx}px) rotate(${dx/40}deg)`;
-  });
-  addEventListener('pointerup',()=>{
-    if(!dragging)return;dragging=false;
-    const f=cards[order[0]];f.style.transition='';f.style.transform='';
-    if(Math.abs(dx)>70)step(dx<0?1:-1);
-    setTimeout(()=>{dragMoved=false;},0);
-  });
-  window.deckGo=go;window.deckRefresh=refresh;
-  refresh();layout();
-})();
-/* 배경 장식(피그마 Union 애셋, HTML에 이미 심어둔 img). 마우스를 올려도 이미지가 나오진 않고
-   해당 단어가 십자말풀이에서 어디인지만 참고로 하이라이트해줌(이미지 자체는 updateGrayReveal이 관리) */
-/* 강조(focusArt)는 마우스가 "실제로 무엇 위에 있는지"를 매번 직접 확인해서 정함:
-   - 그림(.gray)은 투명한 여백까지 포함한 네모 상자라, 상자 기준으로 판단하면 그림 밖으로 나가도 강조가 계속 남았음
-     → 그림과 같은 모양의 벡터 실루엣(art-shapes.js) 안에 있을 때만 그 그림으로 인정
-   - 십자말풀이 칸 사이 빈 곳, 장식 상자, 빈 배경 위에서는 강조를 바로 해제
-   - 카드는 맨 앞 카드 위에 있을 때만 그 프로젝트 */
-(()=>{
-  const stage=document.getElementById('cwStage'),grays=[...document.querySelectorAll('.gray')];
-  // 그림마다 같은 모양의 벡터 실루엣(art-shapes.js, assets/cw/unionN.svg와 동일)을 Path2D로 만들어 둠
-  const hitCtx=document.createElement('canvas').getContext('2d');
-  const shapes=grays.map(g=>{
-    const base=g.querySelector('.g-base'),m=base&&(base.getAttribute('src')||'').match(/(union\d+)\.svg/);
-    const sh=m&&window.ART_SHAPES&&ART_SHAPES[m[1]];
-    return sh?{base,w:sh.w,h:sh.h,rule:sh.rule,path:new Path2D(sh.d)}:null;
-  });
-  // 실루엣 벡터의 실제 크기·위치(.g-base 자리, 그림이 컬러로 바뀌어 투명해져도 자리는 그대로)에 마우스 좌표를 맞춰서 모양 안인지 판단
-  function onArt(g,cx,cy){
-    const sh=shapes[grays.indexOf(g)];
-    if(!sh)return true; // 실루엣 정보가 없으면 예전처럼 상자 기준
-    const r=sh.base.getBoundingClientRect();
-    if(cx<r.left||cx>=r.right||cy<r.top||cy>=r.bottom)return false;
-    return hitCtx.isPointInPath(sh.path,(cx-r.left)/r.width*sh.w,(cy-r.top)/r.height*sh.h,sh.rule);
-  }
-  let cur=null,curGray=-1,overDeck=false;
-  // 카드를 넘겨 앞 카드가 바뀌었을 때(화살표·드래그·키): 마우스가 카드 위에 있으면 강조도 바로 새 앞 카드로 옮김
-  window.__deckFocus=i=>{if(overDeck&&i!==cur){cur=i;focusArt(i);}};
-  function track(e){
-    let i=null,gk=-1;
-    overDeck=!!document.elementsFromPoint(e.clientX,e.clientY).some(el=>el.closest&&el.closest('.deck'));
-    for(const el of document.elementsFromPoint(e.clientX,e.clientY)){
-      if(!stage.contains(el))continue;
-      const cell=el.closest('.cell');
-      if(cell){i=+cell.dataset.p.split(',').filter(Boolean)[0];break;}
-      const card=el.closest('.dk-card');
-      if(card){i=card.dataset.pos==='0'?+card.dataset.i:null;break;}
-      if(el.closest('.cw-toolbar,.deck'))break;
-      const g=el.closest('.gray');
-      if(g&&onArt(g,e.clientX,e.clientY)){gk=grays.indexOf(g);i=grayMap[gk];break;}
-    }
-    grays.forEach((g,k)=>g.style.cursor=k===gk?'pointer':'default');
-    if(gk!==curGray){curGray=gk;if(gk>=0)show(i);} // 그림 위에 새로 올라왔을 때만 그 단어를 칸에서 짚어줌
-    if(i!==cur){cur=i;focusArt(i);syncDeck(i);}
-  }
-  /* 칸·그림 위에 올린 단어에 맞춰 오른쪽 카드도 그 프로젝트 카드로 넘김(카드 위에선 그대로).
-     칸을 쓸고 지나갈 때 카드가 마구 바뀌지 않도록 잠깐(120ms) 머물렀을 때만 넘김 */
-  let deckT=0;
-  function syncDeck(i){
-    clearTimeout(deckT);
-    if(i==null||overDeck||!window.deckGo)return;
-    deckT=setTimeout(()=>deckGo(i),120);
-  }
-  stage.addEventListener('mousemove',track);
-  stage.addEventListener('mouseleave',()=>{clearTimeout(deckT);cur=null;curGray=-1;overDeck=false;focusArt(null);});
-})();
-/* 회색 블록에 이미지 채우기 */
-document.querySelectorAll('.gray').forEach((g,k)=>{
-  const p=projects[grayMap[k]];
-  if(p&&p.img){g.innerHTML=`<img src="${p.img}" alt="${p.t}">`;}
-});
-/* 장식용 컬러 사각 박스 (피그마 node 97:341 실측 좌표/색상 그대로, 십자말풀이 한 칸과 같은 60px 크기) */
-const decoBoxes=[]; // 피그마 225:2641에는 장식 색 상자가 없어서 뺌
-/* 십자말풀이 칸 격자선(가로 309+60n, 세로 161+60n)에 딱 맞도록 위치를 스냅 — 피그마 원본 좌표가
-   몇 px씩 어긋나 있어서(예: 민트 546→549, 파랑 751→761) 칸 선과 박스 모서리가 정확히 이어지게 함 */
-const GRID_X0=309,GRID_Y0=161,GRID_C=60;
-decoBoxes.forEach(d=>{
-  d.x=GRID_X0+Math.round((d.x-GRID_X0)/GRID_C)*GRID_C;
-  d.y=GRID_Y0+Math.round((d.y-GRID_Y0)/GRID_C)*GRID_C;
-});
-decoBoxes.forEach(d=>{
-  const b=document.createElement('div');
-  b.className='deco-box'+(d.x<=GRID_X0?' edge-l':d.x>=1569?' edge-r':''); // 양 끝 색 상자 묶음은 여백 맞춤 때 바깥으로 벌어짐
-  b.style.left=d.x+'px';b.style.top=d.y+'px';b.style.background=d.c;
-  document.getElementById('cwStage').appendChild(b);
-});
-
-/* ===== 십자말풀이 등장 애니메이션 =====
-   호출 시점은 아래 스포트라이트 IIFE 안(GSAP 스크롤 진행도 또는 reduced-motion 분기)에서 결정하고,
-   실제 칸이 하나씩 나타나는 연출 자체는 그대로 둠 */
-/* 전환 때 히어로 빛 3개가 각각 들어갈 칸(열,행)과 그 빛 색 — 순서는 히어로 BLOBS와 같음(초록 별, 핑크 육각형, 파랑 네잎).
-   그 자리 그대로 곧장 내려가면 심심해서, 떨어지면서 서로 자리를 바꿔 엇갈려 들어가게 함:
-   핑크 육각형 → 왼쪽(KOOKSOONDANG), 파랑 네잎 → 오른쪽(ZIPMATE), 초록 별 → 가운데(HAEIT) */
-const DIVE_ORIGINS=[{k:'9,4',c:'#83FF9E'},{k:'4,8',c:'#FFA5AF'},{k:'16,12',c:'#4B84E1'}]; // 빛이 들어가는 칸 = 단어가 겹치는 칸: 초록 별 → HAEIT×CORRELATION, 핑크 육각형 → SOSOBOKDAM×SAMTOFESTIVAL, 파랑 네잎 → KOOKSOONDANG×ZIPMATE
-let started=false;
-function reveal(){
-  // 뒤 배경 그림(실루엣)은 처음엔 숨겨 두었다가, 빛이 칸에 닿아 칸이 켜지기 시작하면 함께 서서히 나타남
-  setTimeout(()=>document.getElementById('cwStage').classList.add('bg-in'),350);
-  // 칸마다 퍼즐 전체 대각선 무지개 색(왼쪽 위 연분홍 → 오른쪽 아래 하늘색)을 미리 넣어둠 → 등장 반짝임에 사용
-  if(!window.__rbRange){let mx=0,my=0;Object.keys(cells).forEach(k=>{const[x,y]=k.split(',').map(Number);mx=Math.max(mx,x);my=Math.max(my,y);});window.__rbRange=mx+my||1;}
-  Object.keys(cells).forEach(k=>{const[x,y]=k.split(',').map(Number);cells[k].style.setProperty('--rb',rainbowAt((x+y)/window.__rbRange));});
-  const lines=grid.querySelector('.gridlines'),decos=[...document.querySelectorAll('.deco-box')];
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches||!Element.prototype.animate){ // 모션 줄이기: 예전처럼 제자리에서 하나씩
-    if(lines)lines.style.opacity=1;decos.forEach(d=>d.classList.add('in'));
-    all.forEach((c,i)=>setTimeout(()=>{c.classList.add('in','flash');setTimeout(()=>c.classList.remove('flash'),500);},i*45));
-    setTimeout(()=>show(0),all.length*45+300);
-    return;
-  }
-  /* 빛이 칸 속으로 들어가 번지기: 전환 때 빛 3개가 각각 들어간 칸(DIVE_ORIGINS)에서부터 시작해,
-     가까운 칸부터 차례로 그 빛 색의 흐릿한 빛방울 → 선명한 네모 칸으로 켜짐(물결처럼 퍼져나감).
-     장식 상자도 같은 방식으로 자기 색으로 켜짐. 격자선은 옅게 보이다가 다 켜지면 또렷해짐 */
-  // 다시 재생될 때(초기화 버튼) 대비: 진행 중이던 모션을 멈추고 격자선·하이라이트를 처음 상태로
-  if(lines){lines.style.transition='none';lines.style.opacity=.55;void lines.offsetWidth;lines.style.transition='';}
-  [...all,...decos].forEach(el=>el.getAnimations().forEach(a=>a.cancel()));
-  all.forEach(c=>c.classList.remove('on','flash','selcell'));wordGlow.classList.remove('show');glowIdx=null;
-  document.querySelectorAll('.it.act').forEach(e=>e.classList.remove('act'));
-  clearTimeout(window.__revealDone);
-  const DROP_MS=1100,RIPPLE_MS=62; // 칸 하나 켜지는 시간 / 한 칸 멀어질 때마다 늦어지는 시간
-  const org=DIVE_ORIGINS.map(o=>{const[x,y]=o.k.split(',').map(Number);return{x,y,c:o.c};});
-  const nearest=(x,y)=>{let best=org[0],bd=1e9;org.forEach(o=>{const d=Math.hypot(x-o.x,y-o.y);if(d<bd){bd=d;best=o;}});return{o:best,d:bd};};
-  const items=[
-    ...all.map(el=>{const[x,y]=el.dataset.key.split(',').map(Number);return{el,cell:true,x,y};}),
-    // 장식 상자는 캔버스 좌표 → 칸 단위로 바꿔서 같은 거리 기준으로
-    ...decos.map(el=>({el,cell:false,x:(el.offsetLeft-GRID_X0)/GRID_C,y:(el.offsetTop-GRID_Y0)/GRID_C})),
-  ];
-  let last=0;
-  items.forEach(it=>{
-    const el=it.el,n=nearest(it.x,it.y);
-    const delay=n.d*RIPPLE_MS+(it.cell?0:180)+Math.random()*50;
-    // 칸은 마우스를 올렸을 때 나오는 연한 대각선 무지개 색(연분홍 → 연노랑·연두 → 연하늘)으로 켜짐
-    const lc=it.cell?(el.style.getPropertyValue('--rb')||n.o.c):getComputedStyle(el).backgroundColor;
-    last=Math.max(last,delay);
-    if(it.cell)el.classList.add('dropping');
-    el.classList.add('in');
-    el.animate([
-      {transform:'scale(.35)',opacity:0,borderRadius:'50%',filter:'blur(10px)',backgroundColor:lc},
-      {transform:'scale(1.12)',opacity:1,borderRadius:'38%',filter:'blur(3px)',backgroundColor:lc,offset:.45},
-      {transform:'scale(1)',opacity:1,borderRadius:'0%',filter:'blur(0px)'}
-    ],{duration:DROP_MS,delay,easing:'cubic-bezier(.22,1,.36,1)',fill:'backwards'});
-    if(it.cell)setTimeout(()=>{el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),600);},delay+DROP_MS*.7);
-  });
-  window.__revealDone=setTimeout(()=>{
-    if(lines)lines.style.opacity=1;
-    all.forEach(c=>c.classList.remove('dropping'));
-    show(0);
-  },last+DROP_MS*.9);
-}
-/* 십자말풀이는 빛 낙하가 끝났고(cwReady) + 십자말풀이 화면이 30% 이상 보일 때(cwVisible) 떨어지기 시작 —
-   예전엔 화면 밖에서 미리 시작돼 도착했을 땐 이미 끝나 있거나 후두둑 끝부분만 보였음 */
-let cwReady=false,cwVisible=false;
-function maybeReveal(){if(cwReady&&cwVisible&&!started){started=true;reveal();}}
-new IntersectionObserver(es=>{cwVisible=es[0].intersectionRatio>=.3;maybeReveal();},{threshold:[0,.3,.6,1]}).observe(document.getElementById('cw'));
+/* 02 FIND(형광펜) 장면은 find.js, 03 REVEAL(종이접기) 장면은 paper.js가 담당. 여기서는 window.Find·window.Paper로 연결만 함 */
 /* ===== 스포트라이트: 가운데서 하나 켜지면 드래그해서 제자리에 놓기 → 고정되며 회색으로 → 다음 것 등장 → 셋 다 놓이면 전부 컬러로,
    그 뒤 스크롤하면 셋이 한 리본으로 모여 S자 곡선을 그리며 십자말풀이 그리드 쪽으로 흡수되는 전환까지 이어짐.
    성능: devicePixelRatio는 항상 1로 고정하고 캔버스 실제 해상도도 화면의 1/4로만 그려 CSS로 확대함(어차피
@@ -925,14 +138,14 @@ new IntersectionObserver(es=>{cwVisible=es[0].intersectionRatio>=.3;maybeReveal(
   }
   window.__lightSeqStart=()=>{if(seqIdx<0)setTimeout(spawnNext,900);};
 
-  /* 히어로 → 십자말풀이 전환(피그마 node 161:346 흐름). 스크롤 없이 Scenes(맨 아래)가 pA·pB를 시간에 따라 0→1로 재생:
-     ① pA: 글자가 사라지고 배경이 십자말풀이 배경색으로 밝아지는 동안 빛 3개가 모양 그대로 작아지며 가라앉음
-     ② pB: 십자말풀이 화면이 서서히 나타나고, 빛이 각자 맡은 칸(DIVE_ORIGINS)으로 좌우로 흔들리며 들어감 →
-        들어간 칸부터 켜지며 번짐(reveal). 이전 버튼으로 돌아가면 그대로 역재생 */
-  const cwSec=document.getElementById('cw');
+  /* 히어로 → 02 FIND(형광펜) 전환. 스크롤 없이 Scenes(맨 아래)가 pA·pB를 시간에 따라 0→1로 재생:
+     ① pA: 글자가 사라지고 배경이 FIND 배경색(#212124)으로 바뀌는 동안 빛 3개가 모양 그대로 작아지며 가라앉음
+     ② pB: FIND 글 화면이 서서히 나타나고, 빛이 반짝이는 점이 되어 빛 꼬리를 그리며 각자 맡은 형광펜(Find.rect(i))으로 날아가
+        그대로 형광펜을 쓸며 칠함(Find.paint) → 다 오면 나머지 형광펜이 차례로 칠해짐(Find.play). 이전 버튼으로 돌아가면 역재생 */
+  const findSec=document.getElementById('find');
   const dive=createDive();
   const clamp01=v=>Math.max(0,Math.min(1,v));
-  let pA=0,pB=0;
+  let pA=0,pB=0,findPlayed=false;
   function update(){
     transProgress=pA+pB; // 0보다 크면 히어로 캔버스는 빛을 안 그림(전환 캔버스가 같은 모양으로 이어받음)
     const op=Math.max(0,1-pA/.35);             // 히어로 글자 fade-out
@@ -942,11 +155,10 @@ new IntersectionObserver(es=>{cwVisible=es[0].intersectionRatio>=.3;maybeReveal(
     bgLayer.style.background=`rgb(${rC},${rC},${bC})`;
     document.body.style.background=bgLayer.style.background;
     if(grainEl)grainEl.style.opacity=(.12*(1-bp)).toFixed(3);
-    cwSec.style.opacity=smoothstep(clamp01(pB/.55)).toFixed(3); // 십자말풀이 화면은 제자리에서 서서히 나타남(아래에서 올라오지 않음)
-    const lines=grid.querySelector('.gridlines');
-    if(lines&&!started)lines.style.opacity=(.55*smoothstep(clamp01((pB-.25)/.6))).toFixed(3);
+    findSec.style.opacity=smoothstep(clamp01(pB/.55)).toFixed(3); // FIND 화면은 제자리에서 서서히 나타남
     dive.render(pA,pB);
-    if(pB>=.965&&!started){started=true;reveal();} // 빛이 칸에 닿는 순간 칸이 켜지기 시작
+    if(pB>=.995&&!findPlayed){findPlayed=true;window.Find&&Find.play();} // 빛이 맡은 형광펜을 다 칠하면 나머지도 차례로
+    else if(pB<.5&&findPlayed){findPlayed=false;window.Find&&Find.reset();} // 히어로로 돌아가면 지워 두고, 다시 오면 또 칠함
     startLoop();
   }
   window.__heroCw={set(a,b){pA=a;pB=b;update();},get:()=>[pA,pB]};
@@ -960,9 +172,11 @@ new IntersectionObserver(es=>{cwVisible=es[0].intersectionRatio>=.3;maybeReveal(
     window.__heroDone=true;hh.classList.add('gone'); // 끝나면 가운데 안내는 사라지고, 아래 가운데 스크롤 표시(.sctl)가 대신 알려줌
     document.body.classList.remove('lock');startLoop();
   };
-  /* 전환용 빛 캔버스: 화면에 고정(position:fixed)된 채 히어로 빛과 똑같은 모양·색으로 그림.
-     (히어로는 핀이 풀리면 위로 스크롤돼 사라지므로, 빛은 히어로와 따로 떠 있어야 칸까지 따라갈 수 있음)
-     절반 해상도 검정 바탕에 lighten으로 겹쳐 그린 뒤 밝기를 투명도로 바꿔서 → 밝은 배경 위에서도 빛처럼 보임 */
+  /* 전환용 빛 캔버스(화면 고정): 히어로 빛 → 반짝이는 점 → 빛 줄기(선) → 형광펜.
+     ① 줄어듦: 모양 그대로(히어로와 같은 스프라이트) 작아지면서 가운데가 하얗게 달아오른 빛 점이 됨
+     ② 날아감: 빛 점이 휘어진 길을 따라 형광펜 자리로 날아가며, 뒤로 가늘어지는 빛 꼬리와 반짝이 가루를 남김
+     ③ 칠하기: 형광펜 왼쪽 끝에 닿으면 그대로 오른쪽으로 쓸고 지나가며 형광펜을 칠함(Find.paint) → 빛은 잦아들고 꼬리가 거둬짐
+     전부 진행도(pA·pB) 기준이라 이전 버튼으로 돌아가면 그대로 역재생됨. 반짝이 가루와 마지막 잦아듦만 시간 기준 */
   function createDive(){
     const cvD=document.createElement('canvas');cvD.className='dive-cv';cvD.setAttribute('aria-hidden','true');
     document.body.appendChild(cvD);
@@ -981,67 +195,155 @@ new IntersectionObserver(es=>{cwVisible=es[0].intersectionRatio>=.3;maybeReveal(
         return c;
       });
     }
-    const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
-    // 좌우 흔들림: 폭(화면 너비 비율), 전체 전환 동안 왕복 횟수, 빛마다 시작 박자·방향(서로 엇갈리게), 최대 기울기(rad)
-    const SWAY_AMP=.055,SWAY_CYC=1.5,SWAY_PH=[0,.35,.7],SWAY_K=[1,.8,1.15],SWAY_ROT=.14;
-    const SPIN_T=[1.25,-1,1.5]; // 빛마다 떨어지는 동안 도는 바퀴 수(음수는 반대 방향)
-    const lerp=(a,b,t)=>a+(b-a)*t;
+    /* 빛 줄기 색(초록 별 · 핑크 육각형 · 파랑 네잎). 가운데 심은 하얗게 */
+    const GLOW=[[182,255,138],[255,150,190],[110,176,255]];
+    const rgba=(c,a)=>`rgba(${c[0]},${c[1]},${c[2]},${a})`;
+    /* 타임라인(u: 전환 전체 0→1) — 빛마다 살짝 엇갈려 출발(STAG) */
+    const SHRINK_END=.34,TRAVEL_START=.3,SWEEP_START=.82,STAG=[0,.03,.06];
+    const BEND=[1,-1,1]; // 휘는 방향(서로 엇갈리게)
+    const c01=v=>Math.max(0,Math.min(1,v));
+    const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+    /* 빛이 지나갈 길: 히어로 자리 H → (휘어진 곡선) → 형광펜 왼쪽 끝 S → (수평으로) 형광펜 오른쪽 끝 E.
+       곡선은 S에서 오른쪽을 향해 들어오도록 만들어서, 그대로 이어서 형광펜을 쓸 수 있게 함 */
+    function pathOf(i){
+      const H=HOMES[i],r=window.Find?Find.rect(i):null;
+      const S=r?{x:r.x0,y:r.y}:{x:innerWidth*.3,y:innerHeight*.4},E=r?{x:r.x1,y:r.y}:{x:S.x+200,y:S.y},lh=r?r.h:40;
+      const vx=S.x-H.x,vy=S.y-H.y,len=Math.hypot(vx,vy)||1,px=-vy/len,py=vx/len,k=BEND[i];
+      const c1={x:H.x+vx*.1+px*len*.6*k,y:H.y+vy*.1+py*len*.6*k};
+      const c2={x:S.x-Math.max(160,len*.45),y:S.y-k*len*.12};
+      const pts=[];let d=0,prev=null;
+      for(let j=0;j<=90;j++){
+        const t=j/90,m=1-t,x=m*m*m*H.x+3*m*m*t*c1.x+3*m*t*t*c2.x+t*t*t*S.x,y=m*m*m*H.y+3*m*m*t*c1.y+3*m*t*t*c2.y+t*t*t*S.y;
+        if(prev)d+=Math.hypot(x-prev.x,y-prev.y);pts.push(prev={x,y,d});
+      }
+      const Lb=d;
+      for(let j=1;j<=24;j++){const x=S.x+(E.x-S.x)*j/24;d+=(E.x-S.x)/24;pts.push({x,y:S.y,d});}
+      return{pts,Lb,L:d,Ls:d-Lb,lh,H};
+    }
+    function at(P,d){ // 길 위에서 거리 d인 점
+      const a=P.pts;if(d<=0)return a[0];if(d>=P.L)return a[a.length-1];
+      let lo=0,hi=a.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(a[m].d<d)lo=m;else hi=m;}
+      const A=a[lo],B=a[hi],t=(d-A.d)/((B.d-A.d)||1);return{x:A.x+(B.x-A.x)*t,y:A.y+(B.y-A.y)*t};
+    }
+    /* 반짝이 가루: 빛 점이 지나간 자리에 흩뿌려져 반짝이다 사라짐 */
+    const dust=[];let lastT=performance.now();
+    function spawn(x,y,c,n,spread){
+      for(let k=0;k<n;k++)dust.push({x:x+(Math.random()-.5)*spread,y:y+(Math.random()-.5)*spread,vx:(Math.random()-.5)*.05,vy:(Math.random()-.5)*.05-.01,
+        life:500+Math.random()*900,age:0,s:.8+Math.random()*1.8,c,ph:Math.random()*6.3});
+    }
+    function drawDust(dt){
+      for(let k=dust.length-1;k>=0;k--){
+        const p=dust[k];p.age+=dt;if(p.age>p.life){dust.splice(k,1);continue;}
+        p.x+=p.vx*dt;p.y+=p.vy*dt;
+        const t=p.age/p.life,a=(1-t)*(.55+.45*Math.sin(p.age*.03+p.ph));
+        if(a<=.02)continue;
+        dctx.fillStyle=rgba(p.c,a*.5);dctx.beginPath();dctx.arc(p.x,p.y,p.s*2.6,0,7);dctx.fill();
+        dctx.fillStyle=`rgba(255,255,255,${a})`;dctx.beginPath();dctx.arc(p.x,p.y,p.s*.7,0,7);dctx.fill();
+      }
+    }
+    /* 빛 꼬리: 머리 쪽은 굵고 밝게, 꼬리 쪽은 가늘고 투명하게. 바깥 번짐 → 색 → 하얀 심 순서로 겹쳐 그림 */
+    function drawTrail(P,d0,d1,W,c,fade){
+      if(d1-d0<1)return;
+      const N=36,q=[];for(let j=0;j<=N;j++)q.push(at(P,d0+(d1-d0)*j/N));
+      const passes=[[5,.07,c],[2.4,.22,c],[1,.75,c],[.34,.95,[255,255,255]]];
+      dctx.lineCap='round';
+      passes.forEach(([wm,am,col])=>{
+        for(let j=1;j<=N;j++){
+          const t=j/N,a=am*Math.pow(t,1.3)*fade;if(a<.01)continue;
+          dctx.strokeStyle=rgba(col,a);dctx.lineWidth=Math.max(.6,W*wm*(.12+.88*Math.pow(t,1.2)));
+          dctx.beginPath();dctx.moveTo(q[j-1].x,q[j-1].y);dctx.lineTo(q[j].x,q[j].y);dctx.stroke();
+        }
+      });
+    }
+    /* 빛 점(머리): 하얀 심 + 색 번짐 + 가로로 긴 십자 반짝임(살짝 깜빡) */
+    function drawHead(x,y,R,c,a,tw){
+      if(a<=.01)return;
+      const g=dctx.createRadialGradient(x,y,0,x,y,R);
+      g.addColorStop(0,`rgba(255,255,255,${a})`);g.addColorStop(.18,rgba(c,.9*a));g.addColorStop(.5,rgba(c,.25*a));g.addColorStop(1,rgba(c,0));
+      dctx.fillStyle=g;dctx.beginPath();dctx.arc(x,y,R,0,7);dctx.fill();
+      const fl=R*(1.6+.5*tw),fw=Math.max(1,R*.06);
+      [[fl,fw],[fw,fl*.55]].forEach(([rx,ry])=>{
+        const h=dctx.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));h.addColorStop(0,`rgba(255,255,255,${.85*a})`);h.addColorStop(1,'rgba(255,255,255,0)');
+        dctx.fillStyle=h;dctx.beginPath();dctx.ellipse(x,y,rx,ry,0,0,7);dctx.fill();
+      });
+    }
+    let linger=0,lingerRaf=0,lastArgs=[0,0];
+    function frameDraw(pA,pB,lk){ // lk: 끝난 뒤 잦아드는 정도(0→1, 끝나기 전엔 0)
+      if(!sprites)build();
+      const W=innerWidth,H=innerHeight,now=performance.now(),dt=Math.min(50,now-lastT);lastT=now;
+      if(cvD.width!==W||cvD.height!==H){cvD.width=W;cvD.height=H;off.width=Math.ceil(W*LS);off.height=Math.ceil(H*LS);}
+      const sc=Math.max(w,h)*.62,U=Math.min(1,pA*.3+pB*.7);
+      // ① 모양 단계: 히어로와 같은 방식(검정 바탕에 lighten → 밝기를 투명도로)으로 줄어드는 모양을 그림
+      ox.setTransform(1,0,0,1,0,0);ox.globalCompositeOperation='source-over';ox.globalAlpha=1;
+      ox.fillStyle='#000';ox.fillRect(0,0,off.width,off.height);
+      ox.setTransform(LS,0,0,LS,0,0);ox.globalCompositeOperation='lighten';
+      let anyShape=false;const P=[],st=[];
+      BLOBS.forEach((b,i)=>{
+        P[i]=pathOf(i);
+        const u=c01((U-STAG[i])/(1-STAG[2])); // 빛마다 엇갈린 진행도
+        st[i]=u;
+        const ks=easeIO(c01(u/SHRINK_END)); // 줄어드는 정도
+        const a=1-c01((u-SHRINK_END*.72)/(SHRINK_END*.32));
+        if(a<=.01)return;
+        const D0=b.rr*sc*2,Dpt=P[i].lh*2.4,D=D0*Math.pow(Dpt/D0,ks);
+        const x=HOMES[i].x,y=HOMES[i].y-H*.03*Math.sin(Math.PI*Math.min(1,ks*1.2));
+        ox.globalAlpha=a;const sz=D*PAD;
+        ox.save();ox.translate(x,y);ox.rotate(ks*ks*.6*BEND[i]);ox.drawImage(sprites[i],-sz/2,-sz/2,sz,sz);ox.restore();
+        anyShape=true;
+      });
+      dctx.clearRect(0,0,W,H);
+      if(anyShape){
+        ox.globalAlpha=1;
+        const img=ox.getImageData(0,0,off.width,off.height),d=img.data;
+        for(let q=0;q<d.length;q+=4){const m=Math.max(d[q],d[q+1],d[q+2]);if(!m){d[q+3]=0;continue;}const k=255/m;d[q]*=k;d[q+1]*=k;d[q+2]*=k;d[q+3]=m;}
+        ox.putImageData(img,0,0);
+        dctx.globalCompositeOperation='source-over';dctx.imageSmoothingQuality='high';dctx.drawImage(off,0,0,W,H);
+      }
+      // ②③ 빛 점 · 빛 꼬리 · 형광펜 쓸기
+      dctx.globalCompositeOperation='lighter';
+      BLOBS.forEach((b,i)=>{
+        const p=P[i],u=st[i],c=GLOW[i],Wl=Math.max(3.5,p.lh*.2);
+        const hot=c01((u-SHRINK_END*.55)/(SHRINK_END*.45)); // 모양이 줄어들며 빛 점이 달아오름
+        const tv=c01((u-TRAVEL_START)/(SWEEP_START-TRAVEL_START)),sw=c01((u-SWEEP_START)/(1-SWEEP_START));
+        const d=tv<1?p.Lb*easeIO(tv):p.Lb+p.Ls*(1-Math.pow(1-sw,1.6));
+        const TL=Math.min(p.Lb*.85,innerWidth*.5)*(1-lk); // 꼬리 길이(끝나면 거둬짐)
+        window.Find&&Find.paint(i,c01((d-p.Lb)/(p.Ls||1)));
+        const pos=at(p,d),fade=1-lk;
+        if(tv>0)drawTrail(p,Math.max(0,d-TL),d,Wl,c,fade);
+        const R=Wl*(4.2+3*(1-tv)*(1-hot*.4))*(1-.6*lk),tw=Math.sin(now*.018+i*2);
+        drawHead(pos.x,pos.y,R,c,hot*fade,tw);
+        if(hot>.5&&fade>.05&&dt>0)spawn(pos.x,pos.y,c,tv>0&&tv<1||sw>0&&sw<1?3:1,Wl*(tv>0?2.5:4));
+      });
+      drawDust(dt);
+      dctx.globalCompositeOperation='source-over';
+      if(!shown){cvD.style.transition='none';cvD.style.opacity=1;shown=true;}
+    }
+    const LINGER_MS=900;
+    function lingerLoop(){
+      const k=c01((performance.now()-linger)/LINGER_MS);
+      frameDraw(lastArgs[0],lastArgs[1],k);
+      if(k<1||dust.length)lingerRaf=requestAnimationFrame(lingerLoop);
+      else{lingerRaf=0;dctx.clearRect(0,0,cvD.width,cvD.height);cvD.style.opacity=0;shown=false;}
+    }
     function render(pA,pB){
-      const vis=(pA>.0005||pB>0)&&pB<.9995;
+      lastArgs=[pA,pB];
+      const vis=pA>.0005||pB>0;
       if(!vis){
+        if(lingerRaf){cancelAnimationFrame(lingerRaf);lingerRaf=0;}linger=0;dust.length=0;
         if(shown){
           /* 히어로로 되돌아온 끝(pA·pB 모두 0): 여기서 바로 숨기면 히어로 캔버스가 빛을 다시 그리기 전
-             한두 프레임(첫 그리기가 무거워 100ms 안팎) 동안 빛이 없는 빈 화면이 보여 '깜빡'임.
-             → 히어로 캔버스가 실제로 한 번 그린 뒤(frame()에서 hideAfterHeroDraw 호출) 숨김 */
-          if(pB<=0)pendingHide=true;else{cvD.style.opacity=0;shown=false;pendingHide=false;}
+             한두 프레임 동안 빛이 없는 빈 화면이 보여 '깜빡'임 → 히어로 캔버스가 실제로 한 번 그린 뒤(frame()에서 hideAfterHeroDraw 호출) 숨김 */
+          pendingHide=true;
         }
         return;
       }
       pendingHide=false;
-      if(!sprites)build();
-      const W=innerWidth,H=innerHeight;
-      if(cvD.width!==W||cvD.height!==H){cvD.width=W;cvD.height=H;off.width=Math.ceil(W*LS);off.height=Math.ceil(H*LS);}
-      const sc=Math.max(w,h)*.62;
-      /* 하나의 흐름 u(0→1)로: 처음엔 빛이 살짝 커지며 눈앞으로 다가왔다가(가까이) → 점점 작아지며 멀어지듯
-         칸 쪽으로 떨어짐. 크기는 거리감이 나도록 비율(로그)로 줄이고, 떨어지는 길은 처음엔 천천히 → 점점 빠르게 */
-      const u=Math.min(1,pA*.3+pB*.7);
-      const near=u<.34?Math.sin(Math.PI*u/.34):0; // 다가오는 정도(0→1→0)
-      const rcd=Math.max(0,Math.min(1,(u-.1)/.9)),er=rcd*rcd*(3-2*rcd); // 멀어지는 정도
-      ox.setTransform(1,0,0,1,0,0);ox.globalCompositeOperation='source-over';ox.globalAlpha=1;
-      ox.fillStyle='#000';ox.fillRect(0,0,off.width,off.height);
-      ox.setTransform(LS,0,0,LS,0,0);ox.globalCompositeOperation='lighten';
-      BLOBS.forEach((b,i)=>{
-        const D0=b.rr*sc*2,hx=HOMES[i].x,hy=HOMES[i].y;
-        const cell=cells[DIVE_ORIGINS[i].k],r=cell.getBoundingClientRect(),cs=r.width||60;
-        const tx=r.left+cs/2,ty=r.top+cs/2;
-        const Dn=D0*(1+.16*near);                        // 가까이 다가와 커진 크기
-        const D=Dn*Math.pow((cs*.8)/Dn,Math.pow(er,1.5)); // 멀어질수록 비율로 작아짐(원근감). 처음엔 천천히, 칸에 가까워질수록 빠르게
-        const ex=er,ey=Math.pow(er,1.6);     // 가로는 부드럽게, 세로는 떨어지듯 점점 빠르게
-        let x=hx+(tx-hx)*ex,y=hy+(ty-hy)*ey-H*.04*near;  // 다가올 땐 살짝 떠오름
-        const a=1-smoothstep(Math.max(0,Math.min(1,(u-.9)/.1)));
-        if(a<=.01)return;
-        // 떨어지는 동안 좌우로 살짝 흔들림(시작·끝은 0)
-        const env=Math.pow(Math.sin(Math.PI*rcd),2),ph=rcd*Math.PI*2*SWAY_CYC-SWAY_PH[i];
-        x+=Math.sin(ph)*W*SWAY_AMP*.7*env*SWAY_K[i];
-        const rot=Math.cos(ph)*SWAY_ROT*env+SPIN_T[i]*Math.PI*2*Math.pow(er,1.3); // 흔들림 + 떨어지며 빙글빙글(처음엔 천천히, 칸에 가까워질수록 빨리 돎. 시작은 0이라 히어로 모양 그대로 이어짐)
-        ox.globalAlpha=a;
-        const sz=D*PAD;
-        ox.save();ox.translate(x,y);ox.rotate(rot);
-        ox.drawImage(sprites[i],-sz/2,-sz/2,sz,sz);
-        ox.restore();
-      });
-      ox.globalAlpha=1;
-      // 검정 바탕 → 투명(밝기를 알파로). 뒤의 배경색 전환·격자선이 그대로 비쳐 보임
-      const img=ox.getImageData(0,0,off.width,off.height),d=img.data;
-      for(let q=0;q<d.length;q+=4){
-        const m=Math.max(d[q],d[q+1],d[q+2]);
-        if(!m){d[q+3]=0;continue;}
-        const k=255/m;d[q]*=k;d[q+1]*=k;d[q+2]*=k;d[q+3]=m;
+      if(pB>=.9995){ // 다 왔음: 빛이 잦아들고 꼬리가 거둬지는 마무리는 시간으로
+        if(!linger){linger=performance.now();if(!lingerRaf)lingerRaf=requestAnimationFrame(lingerLoop);}
+        return;
       }
-      ox.putImageData(img,0,0);
-      dctx.clearRect(0,0,W,H);dctx.imageSmoothingQuality='high';
-      dctx.drawImage(off,0,0,W,H);
-      if(!shown){cvD.style.transition='none';cvD.style.opacity=1;shown=true;}
+      if(lingerRaf){cancelAnimationFrame(lingerRaf);lingerRaf=0;}linger=0;
+      frameDraw(pA,pB,0);
     }
     // 전환 캔버스는 z-index가 높아 그 아래 히어로 글자를 가리고 있음 → 한 번에 걷으면 글자가 '툭' 튀어나와 깜빡이는 느낌.
     // 빛 모양은 두 캔버스가 거의 같으니 .45초 동안 서서히 걷어서 글자만 부드럽게 드러나게 함
@@ -1569,413 +871,19 @@ window.EyeKit=(()=>{
     })(t0);
   });
 })();
-/* ===== 03 REVEAL: 눌러서 빛 터뜨리기 =====
-   화면을 누르면 그 자리에서 처음 LOOK의 세 빛(별 · 네잎 · 육각형 차례로) 모양이 도트로 '팡' 터짐:
-   작은 알맹이 → 모양 테두리가 바깥으로 퍼지며(가운데 밝은 색 → 바깥 진한 색) → 점선처럼 흩어지며 사라짐.
-   도트 한 칸 크기는 늘 같음(배경 격자 한 칸과 같은 크기).
-
-   누르고 끌면 칸이 파스텔 무지개 색으로 칠해지는데, 숨은 글자 'Contact / Me?' 칸만 남고 나머지는 잠시 뒤 사라짐 → 글자가 드러나면 짧은 한 줄이 나타남 */
-(()=>{
-  const end=document.getElementById('end'),gridEl=document.getElementById('pxGrid');
-  const btnAgain=document.getElementById('pxClear'),cap=document.getElementById('eyeCap'),hint=end.querySelector('.px-hint');
-  hint.textContent='격자를 끌어서 칠해 보세요';btnAgain.hidden=true;
-  const LIGHTS=[ // 첫 화면 스포트라이트 세 빛의 색(초록 별 · 파랑 클로버 · 분홍 육각형): 가운데(밝음) → 바깥(진함)
-    {shape:'star',  c:['#EFFFB0','#B7FEC6','#83FF9E','#37B4BB']},
-    {shape:'clover',c:['#D9F1EB','#9CC2F2','#4B84E1','#2D77ED']},
-    {shape:'hex',   c:['#FFF6C3','#FFA5AF','#FF85B0','#F46171']},
-  ];
-  const inShape={
-    star:(u,v)=>Math.pow(Math.abs(u),2/3)+Math.pow(Math.abs(v),2/3),
-    hex:(u,v)=>{const a=Math.abs(u),b=Math.abs(v);return Math.max(a/.866,a*.5+b);},
-    clover:(u,v)=>Math.min(...[[0,-.5],[.5,0],[0,.5],[-.5,0]].map(([p,q])=>Math.hypot(u-p,v-q)/.52)),
-  };
-  const cv=document.createElement('canvas');cv.className='px-fx';cv.setAttribute('aria-hidden','true');end.insertBefore(cv,gridEl.nextSibling);
-  const ctx=cv.getContext('2d');
-  // 칠하기 층: 드래그한 칸을 격자 칸 단위로 칠함(배경 문장 위, 격자선 아래)
-  const pv=document.createElement('canvas');pv.className='px-paint';pv.setAttribute('aria-hidden','true');end.insertBefore(pv,gridEl);
-  const pctx=pv.getContext('2d'),painted=new Map(),temp=new Map(),PAINT='#e0e0dd'; // painted: 칸 → 칠한 색 [r,g,b], temp: 칸 → {t,col}
-  // 붓 색: 누를 때마다 다음 색(십자말풀이 꽃 색). 누르지 않고 지나가면 연한 회색 흔적
-  const BRUSH=FLOWER_COLORS.map(h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16))),TRAIL=[62,62,66]; // 다크 배경 위 지나간 칸: 배경보다 한 톤 밝은 회색
-  let brush=BRUSH[0],brushIdx=0,timers=[];
-  const later=(fn,ms)=>{const id=setTimeout(fn,ms);timers.push(id);return id;};
-  // 숨은 글자(격자 32×18칸): 칠하면 이 칸들만 남고, 나머지 칠한 칸은 잠시 뒤 사라짐.
-  // 'Contact / Me?' 두 줄 — 위로 갈수록 한 칸씩 오른쪽으로 밀어 기울임꼴처럼
-  // 숨은 그림: 직접 그린 픽셀 자화상(21×17칸, 목 맨 아래 한 줄은 잘라 위에 여백) — 화면 아래 끝에 딱 붙어서 올라옴
-  const PAT=['.......########.......', '......###########...#.', '.....#############.#.#', '..#..####.#..#..#.#..#', '.#..####...........#..', '..#####..##.....##.#..', '.######............#..', '.#######..##....##.#..', '.####...#..#.###.#.##.', '.####.#.#....#.#...#..', '....#....####...###.#.', '.....##.............#.', '.......#.....##.....#.', '........##........##..', '........#.########....', '......###.....##......', '....##..##....#.#.....', '...##.....#..##..##...', '..#........##......#..', '..#................#..']; // 몸(어깨·팔) 아래 3줄 추가 — 바닥에 콕 박혀 보이지 않게(사용자 도트 시안)
-  // 숨쉬기 두 번째 장면(피그마에서 그린 들썩이는 모습): 머리·몸이 한 칸 내려오고 옆머리가 살짝 퍼짐. 완성 뒤 PAT ↔ PAT_B를 번갈아 보여 줌
-  const PAT_B=['......................', '.......########.......', '......###########...#.', '.....#############.#.#', '#....####.#..#..#.#...', '.#..####...........#..', '..#####..##.....##.#..', '.######............#..', '.#######..##....##.#..', '.####...#..#.###.#.##.', '.####.#.#....#.#...#..', '....#....####...###.#.', '.....##.............#.', '.......#.....##.....#.', '........##........##..', '.....####.########....', '....#...##....#..#....', '...#......#..##...#...', '..#........##......#..', '..#................#..'];
-  // 눈 깜빡임 장면: 기본 모습에서 눈(7~8번째 줄)만 감긴 모양. 숨쉬는 동안 가끔 끼어듦
-  const PAT_K=['.......########.......', '......###########...#.', '.....#############.#.#', '..#..####.#..#..#.#..#', '.#..####...........#..', '..#####..##.....##.#..', '.######............#..', '.#######...........#..', '.####...#.##.#####.##.', '.####.#.#....#.#...#..', '....#....####...###.#.', '.....##.............#.', '.......#.....##.....#.', '........##........##..', '........#.########....', '......###.....##......', '....##..##....#.#.....', '...##.....#..##..##...', '..#........##......#..', '..#................#..'];
-  let patSetK=new Set(),patSetB=new Set(),breathT=0,breathTimer=0; // 숨쉬기(완성 후 두 장면 번갈아)
-  let patX=0,patY=0,patSet=new Set(),revealDone=false,tabX=0,tabY=0;
-  const TW=9; // (연락처 표는 우선 뺐음 — 자화상 위치는 표가 있던 때 그대로 유지)
-  let C=40,P=10,ox=0,oy=0,W=0,H=0,dpr=1,cols=0,maxRows=0,bursts=[],parts=[],stack=[],running=false,count=0,kind=0;
-  function layout(){
-    W=end.clientWidth;H=end.clientHeight;dpr=Math.min(2,devicePixelRatio||1);
-    cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
-    pv.width=W*dpr;pv.height=H*dpr;pv.style.width=W+'px';pv.style.height=H+'px';
-    C=Math.max(12,60*CW_K*Math.min(W/1920,H/1080));P=C; // 격자 한 칸 = 십자말풀이 칸과 같은 크기(1920 기준 60px을 같은 비율로 줄임). 도트 한 칸 = 격자 한 칸
-    // 격자 위치 = 십자말풀이 칸 격자와 같은 자리(두 섹션 모두 한 화면 크기라, 십자말풀이 칸 원점을 칸 크기로 나눈 나머지만큼 밀어 줌)
-    let fx=0,fy=H;
-    const cwG=document.getElementById('grid'),cwS=document.getElementById('cw');
-    if(cwG&&cwS){const a=cwG.getBoundingClientRect(),b=cwS.getBoundingClientRect();if(a.width||a.height){fx=a.left-b.left;fy=a.top-b.top;}}
-    const md=v=>((v%C)+C)%C;
-    ox=md(fx)-C;oy=md(fy)-C;
-    const gr=Math.floor((H-C*.5-oy)/C)+1; // 절반 이상 보이는 마지막 줄까지 = 자화상이 놓일 바닥 줄
-    gridEl.innerHTML='';gridEl.style.setProperty('--c',C+'px');gridEl.style.setProperty('--ox',ox+'px');gridEl.style.setProperty('--oy',oy+'px');
-    cols=Math.ceil((W-ox)/P)+1;maxRows=Math.floor(H*.3/P); // 쌓이는 층은 화면 높이의 30%까지
-    const old=stack;stack=Array.from({length:cols},(_,i)=>old[i]||[]);
-    // 그림을 화면 가운데에 맞춰 놓음(칠한 칸은 그림 기준 좌표로 기억해서 화면 크기가 바뀌어도 유지)
-    // 자화상 + 한 칸 띄우고 연락처 표(TW칸)를 한 덩어리로 가운데 정렬, 자화상은 맨 아래 줄에 붙임
-    const c0=Math.ceil(-ox/C-.001),vc=Math.floor((W-(ox+c0*C))/C),pw=PAT[0].length,block=pw+2+TW;
-    patX=c0; /* 자화상 자리(그림 왼쪽 첫 줄은 숨쉬기용 빈 줄) */patY=gr-PAT.length; // 자화상 맨 아래 줄 = 화면 바닥 줄
-    tabX=vc>=block?patX+pw+2:c0+vc-TW;tabY=Math.max(Math.ceil(-oy/C),patY+5);
-    Object.assign(hint.style,{left:'50%',top:'calc(3vh + 58px)',bottom:'auto',transform:'translateX(-50%)'}); // 안내는 가운데 위쪽
-    patSet=new Set();PAT.forEach((r,y)=>[...r].forEach((ch,x)=>{if(ch==='#')patSet.add(x+','+y);}));
-    patSetK=new Set();PAT_K.forEach((r,y)=>[...r].forEach((ch,x)=>{if(ch==='#')patSetK.add(x+','+y);}));
-    patSetB=new Set();PAT_B.forEach((r,y)=>[...r].forEach((ch,x)=>{if(ch==='#')patSetB.add(x+','+y);}));
-    placeLetter();kick();paintAll();
-  }
-  /* ===== 편지 모양 연락 폼(사용자 도트 시안): 자화상 오른쪽 끝 머리카락(그림 x=21)에서 2칸 띄우고, 머리카락 끝 줄보다 한 칸 아래에서부터
-     격자 칸 단위로 그림. 14칸 × 15줄. 테두리 칸 + 입력 칸(이름·연락처·이메일·메시지) + 보내기 칸. 그림이 완성되면 나타남 */
-  // 편지 모양 두 장면(사용자 도트 시안): A = 기본, B = 살짝 기울어진 모양. 완성 후 둘을 번갈아 보여 흔들림
-  const LT_A=['############..','.#........###.','..#.......####','..#.###.##...#','..#..........#','..#.########.#','..#..........#','..#.#######..#','..#..........#','..#.########.#','..#.#######..#','..#.###......#','.#.......##.#.','.#..........#.','############..'];
-  const LT_B=['############..','.#........##..','.#..........#.','.#.###.##...#.','.#..........#.','.#.########.#.','.#..........#.','.#.#######..#.','.#..........#.','.#.########.#.','.#.#######..#.','.#.###......#.','.#......##..#.','#..........#..','############..'];
-  const LT_FIELDS=[ // 이름표, name, 칸들 [줄, 시작, 끝] — A 장면 기준(B에선 한 칸 왼쪽)
-    {k:'이름',n:'name',cells:[[3,4,6]]},
-    {k:'연락처',n:'phone',cells:[[5,4,11]]},
-    {k:'이메일',n:'email',cells:[[7,4,10]]},
-    {k:'메시지',n:'message',cells:[[9,4,11],[10,4,10],[11,4,6]]},
-  ];
-  const LT_SEND=[12,9,10];
-  const letter=document.createElement('form');letter.className='ct-letter';letter.id='ctLetter';letter.noValidate=true;letter.setAttribute('aria-label','메일 보내기');
-  const ltCells=new Map(); // 'r,c'(A 장면 기준) → 그 칸을 이루는 요소들(칠하면서 지나가면 드러남)
-  const ltAdd=(k,el)=>{if(!ltCells.has(k))ltCells.set(k,[]);ltCells.get(k).push(el);};
-  let LX=0,LY=0; // 편지 왼쪽 위 칸의 격자 좌표(placeLetter가 정함)
-  {
-    const cellDiv=(r,c0,c1,cls)=>{const d=document.createElement('i');d.className=cls;d.style.gridArea=`${r+1}/${c0+1}/${r+2}/${c1+2}`;d.style.setProperty('--d',(r+c0)*28+'ms');return d;};
-    const inField=(r,c,shift)=>LT_FIELDS.some(f=>f.cells.some(([R,a,b])=>R===r&&c>=a-shift&&c<=b-shift))||(r===LT_SEND[0]&&c>=LT_SEND[1]-shift&&c<=LT_SEND[2]-shift);
-    LT_A.forEach((row,r)=>[...row].forEach((ch,c)=>{if(ch==='#'&&!inField(r,c,0)){const d=cellDiv(r,c,c,'lt-f lt-a');letter.appendChild(d);ltAdd(r+','+c,d);}}));
-    // B 장면은 시안보다 한 칸 오른쪽에 놓음 → 가운데(양옆 세로 테두리·입력 칸)는 A와 같은 자리에 고정되고, 위아래(윗줄·아랫줄·접힌 모서리)만 흔들림
-    LT_B.forEach((row,r)=>[...row].forEach((ch,c)=>{if(ch==='#'&&!inField(r,c,1))letter.appendChild(cellDiv(r,c+1,c+1,'lt-f lt-b'));}));
-    LT_FIELDS.forEach(f=>{
-      const mine=[];
-      f.cells.forEach(([r,a,b])=>{for(let c=a;c<=b;c++){const d=cellDiv(r,c,c,'lt-f lt-in lt-sh');letter.appendChild(d);ltAdd(r+','+c,d);mine.push(r+','+c);}});
-      const [r0,a0]=f.cells[0],r1=f.cells[f.cells.length-1][0],b0=Math.max(...f.cells.map(c=>c[2]));
-      const lab=document.createElement('label');lab.className='lt-field lt-sh'+(f.cells.length>1?' lt-multi':'');mine.forEach(k=>ltAdd(k,lab));
-      lab.style.gridArea=`${r0+1}/${a0+1}/${r1+2}/${b0+2}`;lab.style.setProperty('--d',(r0+a0)*28+80+'ms');
-      if(f.cells.length>1){ // 계단 모양 칸에 맞춰 글 쓰는 영역도 계단 모양으로 자름
-        const w=b0-a0+1,h=r1-r0+1,pts=[];let y=0;pts.push('0% 0%');
-        f.cells.forEach(([r,a,b],i)=>{const x=(b-a0+1)/w*100,yy=(r-r0)/h*100,yn=(r-r0+1)/h*100;pts.push(`${x}% ${yy}%`,`${x}% ${yn}%`);});
-        pts.push('0% 100%');lab.style.clipPath=`polygon(${pts.join(',')})`;
-      }
-      lab.innerHTML=`<span>${f.k}</span>`+(f.n==='message'?`<textarea name="message" rows="3"></textarea>`:`<input name="${f.n}" type="${f.n==='email'?'email':f.n==='phone'?'tel':'text'}" autocomplete="${f.n==='phone'?'tel':f.n}">`);
-      letter.appendChild(lab);
-    });
-    const send=document.createElement('button');send.type='submit';send.className='lt-send lt-sh';for(let c=LT_SEND[1];c<=LT_SEND[2];c++)ltAdd(LT_SEND[0]+','+c,send);send.textContent='보내기';send.style.gridArea='13/10/14/12';send.style.setProperty('--d',(12+9)*28+'ms');
-    letter.appendChild(send);
-    const msg=document.createElement('p');msg.className='lt-msg lt-sh';msg.setAttribute('aria-live','polite');msg.style.gridArea='14/3/15/12';letter.appendChild(msg);
-    end.appendChild(letter);
-    const say=(t,c='')=>{msg.textContent=t;msg.className='lt-msg lt-sh '+c;};
-    letter.addEventListener('keydown',e=>e.stopPropagation()); // 입력 중 방향키·PageDown이 장면 이동으로 먹히지 않게
-    // 연락처: 숫자만 쳐도 010-1234-5678처럼 자동으로 '-'를 넣음(02 지역번호는 02-123-4567 / 02-1234-5678)
-    const fPhone=letter.querySelector('[name=phone]'),fMail=letter.querySelector('[name=email]');
-    fPhone.setAttribute('inputmode','numeric');fPhone.maxLength=13;fPhone.placeholder='010-0000-0000';
-    const fmtPhone=v=>{const d=v.replace(/\D/g,'').slice(0,11);
-      if(d.startsWith('02')){if(d.length<3)return d;if(d.length<6)return d.slice(0,2)+'-'+d.slice(2);if(d.length<10)return d.slice(0,2)+'-'+d.slice(2,5)+'-'+d.slice(5);return d.slice(0,2)+'-'+d.slice(2,6)+'-'+d.slice(6,10);}
-      if(d.length<4)return d;if(d.length<8)return d.slice(0,3)+'-'+d.slice(3);if(d.length<11)return d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6);return d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);};
-    fPhone.addEventListener('input',()=>{fPhone.value=fmtPhone(fPhone.value);});
-    // 이메일: '@'나 '.com' 같은 도메인이 빠지면 칸을 벗어날 때(또는 고칠 때) 바로 안내
-    const mailOk=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
-    const mailHint=v=>!v.includes('@')?"이메일에 '@'가 빠졌어요 (예: name@gmail.com)":!/@[^\s@]+\.[^\s@]{2,}$/.test(v)?"'@' 뒤에 '.com' 같은 주소를 적어 주세요 (예: name@gmail.com)":'';
-    const tip=document.createElement('p');tip.className='lt-tip lt-sh';tip.setAttribute('aria-live','polite');tip.style.gridArea='9/5/10/14';letter.appendChild(tip); // 이메일 칸 바로 아래 줄
-    const checkMail=(live)=>{const v=fMail.value.trim(),lab=fMail.closest('label');
-      if(!v||mailOk(v)){lab.classList.remove('bad');tip.textContent='';return;}
-      if(live&&!lab.classList.contains('bad'))return; // 쓰는 중엔 이미 틀렸다고 알려준 경우에만 다시 확인
-      lab.classList.add('bad');tip.textContent=mailHint(v);};
-    fMail.addEventListener('blur',()=>checkMail(false));
-    fMail.addEventListener('input',()=>checkMail(true));
-    letter.addEventListener('wheel',e=>e.stopPropagation(),{passive:true});
-    letter.addEventListener('submit',async e=>{
-      e.preventDefault();
-      const v=n=>letter.querySelector(`[name=${n}]`).value.trim();
-      const name=v('name'),phone=v('phone'),email=v('email'),text=v('message');
-      const bad=[['name',!name],['email',!mailOk(email)],['message',!text]];
-      bad.forEach(([n,b])=>letter.querySelector(`[name=${n}]`).closest('label').classList.toggle('bad',b));
-      tip.textContent=email&&!mailOk(email)?mailHint(email):'';
-      if(bad.some(([,b])=>b)){say('이름·이메일·메시지를 확인해 주세요','err');return;}
-      const body=text+'\n\n— '+name+' ('+email+(phone?' / '+phone:'')+')';
-      if(!window.CONTACT_ENDPOINT_URL){
-        location.href=`mailto:jodabin9098@gmail.com?subject=${encodeURIComponent('[포트폴리오] '+name+'님의 메시지')}&body=${encodeURIComponent(body)}`;
-        say('메일 앱에서 보내기를 눌러 주세요');return;
-      }
-      send.disabled=true;say('보내는 중…');
-      try{const r=await fetch(window.CONTACT_ENDPOINT_URL,{method:'POST',headers:{'Accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({name,phone,email,message:text})});
-        if(!r.ok)throw 0;letter.reset();say('잘 보내졌어요. 곧 답장 드릴게요!','ok');}
-      catch(err){say('보내지 못했어요. 잠시 뒤 다시 시도해 주세요','err');}
-      send.disabled=false;
-    });
-  }
-  function placeLetter(){
-    const LW=14,tipX=21; // 자화상 오른쪽 끝 머리카락 칸(그림 기준 x=21, y=2)
-    let avail=Math.floor((W-(ox+patX*C))/C);                   // 자화상 왼쪽부터 화면 안에 온전히 보이는 칸 수
-    if(avail-(tipX+1)-LW<1){patX-=1;avail+=1;}                   // 화면이 좁으면(16:9 등) 자화상 맨 왼쪽 빈 줄을 화면 밖으로 한 칸 밀어 자리를 만듦
-    const gap=Math.max(1,Math.min(2,avail-(tipX+1)-LW));        // 기본 2칸, 화면이 좁으면 1칸까지 줄임
-    const gx=patX+tipX+1+gap,gy=patY+3; // 머리카락 끝 줄보다 한 칸 아래부터
-    LX=gx;LY=gy;
-    Object.assign(letter.style,{left:(ox+gx*C)+'px',top:(oy+gy*C)+'px'});
-    letter.style.setProperty('--c',C+'px');
-  }
-  // 그림을 칠하며 지나간 칸이 편지 칸이면 그 칸도 드러남(완성되면 나머지가 전부 나타남)
-  function revealLetterAt(gx,gy){const els=ltCells.get((gy-LY)+','+(gx-LX));if(els)els.forEach(el=>el.classList.add('on'));}
-  // 흔들림: 완성 후 A·B 장면을 번갈아(가운데는 고정, 위아래만 펄럭). 칸에 글을 쓰는 중(포커스)에는 A에 멈춤
-  let wobT=0,wobOn=false;
-  // 속도는 옆 캐릭터 숨쉬기(1.2초마다 장면 전환)와 같은 박자로 맞춤 — 캐릭터가 바뀌는 순간 편지도 같이 바뀜
-  function startWobble(){clearTimeout(wobT);letter.classList.add('lt-ready');(function beat(){
-    const BEAT=1200,t=breathT?performance.now()-breathT:0,n=Math.floor(t/BEAT);
-    const hold=letter.matches(':focus-within')||matchMedia('(prefers-reduced-motion: reduce)').matches;
-    wobOn=!hold&&n%2===1;letter.classList.toggle('wob',wobOn);
-    wobT=setTimeout(beat,BEAT-(t%BEAT)+5);})();}
-  function resetLetter(){clearTimeout(wobT);wobOn=false;letter.classList.remove('wob','lt-ready');letter.querySelectorAll('.on').forEach(el=>el.classList.remove('on'));}
-  letter.addEventListener('focusin',()=>letter.classList.remove('wob'));
-  // 칠하는 색: 십자말풀이 칸과 같은 대각선 무지개 파스텔(연분홍 → 살구 → 연노랑 → 민트 → 하늘)
-  // 칠해진 칸 중 일부(약 4칸 중 1칸)에는 작은 아이콘이 들어감 — 사이트에 나온 것들(세 빛 · 눈 · ↗ · 편지)
-  const hash=(x,y)=>{let h=(x*374761393+y*668265263)|0;h=(h^(h>>>13))*1274126177|0;return(h^(h>>>16))>>>0;};
-  const INK=[245,245,245]; // 완성 후 색: 다크 배경이라 밝은 #F5F5F5로(예전 밝은 배경에선 검정 #080809)
-  function paintCell(gx,gy,rgb,a=1,sc=1,ink=0,toBottom=false){ // ink: 0 원래 색 → 1 검정
-    const cx=ox+gx*C+C/2,cy=oy+gy*C+C/2,z=C*sc;
-    pctx.globalAlpha=a;pctx.fillStyle=`rgb(${rgb.map((v,i)=>Math.round(v+(INK[i]-v)*ink)).join(',')})`;
-    const top=cy-z/2-.5,h=toBottom?Math.max(z+1,H-top):z+1; // 자화상 맨 아래 줄은 화면 바닥까지 늘려 아래 여백이 안 보이게
-    pctx.fillRect(cx-z/2-.5,top,z+1,h); // 반 픽셀씩 겹쳐 칠해 칸 사이 격자선이 안 보이게
-  }
-  let fading=false,popT=0,inkT=0; // inkT: 완성 뒤 컬러가 검정으로 번지기 시작한 시각
-  function paintAll(){
-    pctx.setTransform(dpr,0,0,dpr,0,0);pctx.clearRect(0,0,W,H);
-    const now=performance.now();let popping=false;
-    const span=PAT.length+PAT[0].length;
-    if(breathT){ // 숨쉬기: 1.2초마다 두 장면을 번갈아(검정). 다음 바뀌는 순간에 다시 그림
-      const BEAT=1200,n=Math.floor((now-breathT)/BEAT),k=n%2;
-      // 눈 깜빡임: 기본 모습(짝수 박자) 두 번에 한 번, 박자 가운데서 0.16초 동안 눈을 감음
-      const inBeat=(now-breathT)%BEAT,blink=k===0&&n%4===2&&inBeat>520&&inBeat<680;
-      const F=k?patSetB:blink?patSetK:patSet;
-      F.forEach(key=>{const [x,y]=key.split(',').map(Number);paintCell(patX+x,patY+y,INK,1,1,0,y===PAT.length-1);});
-      clearTimeout(breathTimer);
-      const nextIn=(k===0&&n%4===2&&inBeat<520)?520-inBeat:(k===0&&n%4===2&&inBeat<680)?680-inBeat:BEAT-inBeat; // 깜빡이는 순간에도 다시 그림
-      breathTimer=setTimeout(paintAll,nextIn+5);
-    }else
-    painted.forEach((rgb,k)=>{const [x,y]=k.split(',').map(Number);let sc=1,ink=0;
-      if(popT){const t=(now-popT-(x+y)*28)/520;if(t<1)popping=true;if(t>0&&t<1)sc=1+.32*Math.sin(Math.PI*t);}
-      if(inkT){const p=(now-inkT)/1100;ink=Math.max(0,Math.min(1,p*1.6-(x+y)/span*.6));if(ink<1)popping=true;} // 왼쪽 위부터 대각선으로 검정이 번짐
-      paintCell(patX+x,patY+y,rgb,1,sc,ink,y===PAT.length-1&&sc===1);});
-    temp.forEach((v,k)=>{const age=now-v.t,life=v.trail?[250,650]:[900,800],a=age<life[0]?1:1-(age-life[0])/life[1];if(a<=0){temp.delete(k);return;}const [x,y]=k.split(',').map(Number);paintCell(x,y,v.col,a);});
-    pctx.globalAlpha=1;
-    if((temp.size||popping)&&!fading){fading=true;requestAnimationFrame(()=>{fading=false;paintAll();});}
-  }
-  function paintAt(gx,gy){
-    revealLetterAt(gx,gy);
-    const pk=(gx-patX)+','+(gy-patY);
-    if(patSet.has(pk)){ // 그림 칸: 계속 남음
-      if(painted.has(pk))return;painted.set(pk,INK);btnAgain.hidden=false;paintAll(); // 편지처럼 칠하는 즉시 완성 색(흰색)으로 드러남
-      if(!revealDone&&painted.size/patSet.size>=.6)finishReveal(gx,gy);
-    }else{temp.set(gx+','+gy,{t:performance.now(),col:brush});paintAll();} // 그림이 아닌 칸: 잠깐 칠해졌다 사라짐
-  }
-  // 그림 칸의 60%를 칠하면 나머지가 마지막으로 칠한 자리부터 물결처럼 채워지고 한 줄이 나타남
-  function finishReveal(gx,gy,multi){
-    revealDone=true;autoBtn.hidden=true;btnAgain.hidden=false;stopDemo();
-    const rest=[...patSet].filter(k=>!painted.has(k)).map(k=>{const [x,y]=k.split(',').map(Number);return{k,d:Math.hypot(patX+x-gx,patY+y-gy)};}).sort((a,b)=>a.d-b.d);
-    const fill=INK;rest.forEach(c=>{const [x,y]=c.k.split(',').map(Number),col=fill;later(()=>{painted.set(c.k,col);paintAll();},c.d*30);});
-    const doneT=(rest.length?rest[rest.length-1].d*30:0)+250;
-    hint.classList.add('hide');
-    later(()=>{ // 다 드러나면: 글자 전체가 대각선 물결로 한 번 튀어 오르고, 글자 둘레에서 빛이 터짐
-      popT=performance.now();temp.clear();paintAll();
-      later(()=>{inkT=performance.now();paintAll();},900); // 튀어 오른 뒤 컬러 → 검정
-      later(()=>{breathT=performance.now();paintAll();},900+1400); // 다 검정이 되면 숨쉬기 시작
-      const pw=PAT[0].length,ph=PAT.length;
-      [[.1,.25],[.95,.1],[0,.7],[1,.55],[.5,-.05],[.35,.45]].forEach(([u,v],i)=>later(()=>spawn(ox+(patX+u*pw)*C,oy+(patY+v*ph)*C),200+i*140));
-      end.classList.add('revealed');
-      later(startWobble,900+1400+10); // 캐릭터가 숨쉬기 시작하는 순간부터 같은 박자로 흔들림(이름표·예시 글자도 이때 함께 나타남)
-    },doneT);
-  }
-  const cell=(gx,gy,col,a=1)=>{ctx.globalAlpha=a;ctx.fillStyle=col;ctx.fillRect(ox+gx*P,oy+gy*P,P,P);};
-  function spawn(px,py){
-    const gx=Math.round((px-ox)/P),gy=Math.round((py-oy)/P),i=kind%3;kind++;
-    bursts.push({gx,gy,i,t0:performance.now(),emitted:false});kick();
-  }
-  function kick(){if(!running){running=true;requestAnimationFrame(tick);}}
-  // 터짐: t(초)에 따라 모양 테두리가 퍼져 나감
-  function drawBurst(b,T){
-    const L=LIGHTS[b.i],sh=inShape[L.shape],R=3.2;
-    if(T<.1){ // 알맹이
-      cell(b.gx,b.gy,L.c[0]);
-      return;
-    }
-    const k=Math.min(1,(T-.1)/.7),r=1+k*(R-1);        // 퍼지는 크기
-    const col=L.c[Math.min(3,Math.floor(k*4))];              // 밝은 색 → 진한 색
-    const fade=k<.6?1:1-(k-.6)/.4,dotted=k>.45;
-    const n=Math.ceil(r)+1;
-    for(let y=-n;y<=n;y++)for(let x=-n;x<=n;x++){
-      const d=sh(x/r,y/r);
-      if(Math.abs(d-1)<Math.max(.2,.6/r)){ // 테두리
-        if(dotted&&((x+y)&1))continue;
-        cell(b.gx+x,b.gy+y,col,fade);
-      }else if(k<.35&&d<.45){ // 초반엔 가운데도 밝게
-        cell(b.gx+x,b.gy+y,L.c[0],1-k/.35);
-      }
-    }
-  }
-  function emit(b){ // 터진 조각들이 위로 떠오름
-    const L=LIGHTS[b.i],n=7+Math.floor(Math.random()*4);
-    for(let q=0;q<n;q++){
-      const gx=b.gx+Math.round((Math.random()-.5)*8);
-      if(gx<0||gx>=cols)continue;
-      parts.push({gx,y:b.gy+Math.round((Math.random()-.5)*4),v:0,col:L.c[1+Math.floor(Math.random()*3)],delay:Math.random()*.35});
-    }
-  }
-  let last=performance.now();
-  function tick(now){
-    const dt=Math.min(.05,(now-last)/1000);last=now;
-    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
-    bursts=bursts.filter(b=>{const T=(now-b.t0)/1000;if(T>.95)return false;drawBurst(b,T);return true;});
-    parts=parts.filter(p=>{
-      if(p.delay>0){p.delay-=dt;return true;} // 테두리가 흩어질 즈음부터 하나씩 떠오름
-      p.v=Math.min(16,p.v+22*dt);p.y-=p.v*dt;               // 점점 빨라지며 위로
-      const top=stack[p.gx]?stack[p.gx].length:0;
-      if(p.y<=top){ if(top<maxRows)stack[p.gx].push(p.col); return false; } // 층에 닿으면 쌓임
-      cell(p.gx,Math.round(p.y),p.col);return true;
-    });
-    ctx.globalAlpha=1;
-    if(bursts.length||parts.length)requestAnimationFrame(tick);else running=false;
-  }
-  /* 누르고 끌면(드래그) 지나간 격자 칸이 연한 색으로 칠해짐. 끌지 않고 톡 누르기만 하면 빛이 터짐 */
-  let down=null,dragging=false,lastCell=null;
-  const toG=e=>{const r=end.getBoundingClientRect();return[Math.floor((e.clientX-r.left-ox)/C),Math.floor((e.clientY-r.top-oy)/C),e.clientX-r.left,e.clientY-r.top];};
-  end.addEventListener('pointerdown',e=>{
-    if(e.target.closest&&e.target.closest('a,button,form'))return; // 폼·링크를 누를 땐 반응하지 않음
-    if(revealDone){ // 그림이 완성되면 더는 칠하거나 끌 수 없음 — 대신 이스터에그: 그림 밖 빈 곳을 누르면 폭죽이 터짐
-      const g=toG(e),pk=(g[0]-patX)+','+(g[1]-patY);
-      if(!patSet.has(pk)&&!patSetB.has(pk)&&!patSetK.has(pk))spawn(g[2],g[3]);
-      return;
-    }
-    down=toG(e);dragging=false;lastCell=[down[0],down[1]];stopDemo();
-    brush=BRUSH[brushIdx++%BRUSH.length]; // 누를 때마다 다음 색 붓
-  });
-  let hoverLast=null;
-  function trailAt(gx,gy){ // 누르지 않고 지나간 칸: 연한 회색으로 잠깐 채워졌다 사라짐(칠한 칸은 그대로)
-    if(revealDone)return;
-    const k=gx+','+gy,v=temp.get(k);
-    if(painted.has((gx-patX)+','+(gy-patY))||(v&&!v.trail))return;
-    temp.set(k,{t:performance.now(),col:TRAIL,trail:true});
-  }
-  addEventListener('pointermove',e=>{
-    if(down&&revealDone){down=null;dragging=false;return;} // 끄는 도중 완성돼도 거기서 멈춤
-    if(!down){
-      if(e.pointerType!=='mouse'||!(e.target.closest&&e.target.closest('#end'))||e.target.closest('a,button,.ct-card,.ct-letter')){hoverLast=null;return;}
-      const g=toG(e);
-      if(hoverLast){const [x0,y0]=hoverLast,n=Math.max(Math.abs(g[0]-x0),Math.abs(g[1]-y0));for(let i=1;i<=Math.min(n,30);i++)trailAt(Math.round(x0+(g[0]-x0)*i/n),Math.round(y0+(g[1]-y0)*i/n));}
-      else trailAt(g[0],g[1]);
-      hoverLast=[g[0],g[1]];paintAll();return;
-    }
-    const g=toG(e);
-    if(!dragging){if(Math.hypot(g[2]-down[2],g[3]-down[3])<6)return;dragging=true;hint.classList.add('hide');paintAt(down[0],down[1]);} // 칠하기 시작하면 안내는 사라짐
-    const [x0,y0]=lastCell,n=Math.max(Math.abs(g[0]-x0),Math.abs(g[1]-y0)); // 빠르게 끌어도 칸이 비지 않게 사이 칸도 칠함
-    for(let i=1;i<=n;i++)paintAt(Math.round(x0+(g[0]-x0)*i/n),Math.round(y0+(g[1]-y0)*i/n));
-    lastCell=[g[0],g[1]];
-  });
-  addEventListener('pointerup',()=>{
-    if(!down)return;
-    if(!dragging){
-      spawn(down[2],down[3]);
-    }
-    down=null;dragging=false;
-  });
-  // 오른쪽 위 '그림 지우기': 칠한 칸·완성 연출·연락처 표를 모두 처음 상태로
-  // 오른쪽 위 '그림 한 번에 완성하기'(십자말풀이 '자동으로 풀기'처럼): 칠하지 않아도 그림 가운데부터 여러 색으로 채워져 완성 연출까지 한 번에
-  const autoBtn=document.getElementById('pxAuto')||{hidden:true,addEventListener(){}}; // 시안 html처럼 버튼이 없는 페이지에서도 안 깨지게
-  autoBtn.addEventListener('click',()=>{if(revealDone)return;finishReveal(patX+Math.floor(PAT[0].length/2),patY+Math.floor(PAT.length/2),true);});
-  btnAgain.textContent='그림 지우기';
-  btnAgain.addEventListener('click',()=>{
-    timers.forEach(clearTimeout);timers=[];
-    resetLetter();
-    painted.clear();temp.clear();bursts=[];parts=[];revealDone=false;popT=0;inkT=0;brushIdx=0;breathT=0;clearTimeout(breathTimer);
-    end.classList.remove('revealed');btnAgain.hidden=true;autoBtn.hidden=false;
-    setHint('<i class="ph-drag"></i>화면을 드래그해서 숨은 그림을 찾아보세요');
-    paintAll();
-  });
-  // 들어오면 손 모양 커서가 한 번 칸을 문질러 보이며 '끌어서 칠하기'를 알려 줌(사용자가 누르면 바로 멈춤)
-  const ghost=document.createElement('div');ghost.className='px-ghost';ghost.setAttribute('aria-hidden','true');
-  ghost.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 3l14 7.5-6.2 1.6L10 18.5z"/></svg>';end.appendChild(ghost);
-  let demo=null;
-  function setHint(t,prog){hint.innerHTML=t;hint.classList.remove('hide');hint.classList.toggle('prog',!!prog);}
-  function stopDemo(){if(!demo)return;cancelAnimationFrame(demo.raf);demo=null;ghost.classList.remove('show');}
-  function runDemo(){
-    if(revealDone||demo)return;
-    const r=8,x0=patX+3,x1=patX+PAT[0].length-2,D=2200;
-    const pts=[[x0,patY+r-2],[x0+(x1-x0)*.35,patY+r+1],[x0+(x1-x0)*.7,patY+r-2],[x1,patY+r+1]]; // 지그재그로 문지름
-    let last=null;demo={t0:performance.now()};ghost.classList.add('show');
-    (function step(now){
-      if(!demo)return;
-      const p=Math.min(1,(now-demo.t0-500)/D);
-      if(p>=0){
-        const f=p*(pts.length-1),i=Math.min(pts.length-2,Math.floor(f)),k=f-i,e=k*k*(3-2*k);
-        const gx=pts[i][0]+(pts[i+1][0]-pts[i][0])*e,gy=pts[i][1]+(pts[i+1][1]-pts[i][1])*e;
-        ghost.style.transform=`translate(${ox+gx*C+C/2}px,${oy+gy*C+C/2}px)`;
-        const c=[Math.floor(gx),Math.floor(gy)],pk=(c[0]-patX)+','+(c[1]-patY);
-        if(!last||last[0]!==c[0]||last[1]!==c[1]){last=c;if(!patSet.has(pk)){temp.set(c[0]+','+c[1],{t:performance.now(),col:brush});paintAll();}}
-      }else ghost.style.transform=`translate(${ox+pts[0][0]*C+C/2}px,${oy+pts[0][1]*C+C/2}px)`;
-      if(p<1)demo.raf=requestAnimationFrame(step);else{demo=null;setTimeout(()=>ghost.classList.remove('show'),300);}
-    })(performance.now());
-  }
-  setHint('<i class="ph-drag"></i>화면을 드래그해서 숨은 그림을 찾아보세요');
-  let shown=false;
-  new MutationObserver(()=>{if(document.body.dataset.scene==='reveal'&&!shown){shown=true;setTimeout(runDemo,700);}})
-    .observe(document.body,{attributes:true,attributeFilter:['data-scene']});
-  layout();
-  let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(layout,150);});
-})();
-/* ===== REVEAL 메일 폼 =====
-   CONTACT_ENDPOINT에 폼 전송 주소(예: Formspree https://formspree.io/f/xxxx)를 넣으면 페이지 안에서 바로 메일이 보내짐.
-   비어 있으면 적은 내용이 채워진 채로 메일 앱이 열림(mailto) */
-const CONTACT_ENDPOINT='';window.CONTACT_ENDPOINT_URL=CONTACT_ENDPOINT; // 편지 폼(REVEAL)도 같은 주소를 씀
-(()=>{
-  const f=document.getElementById('ctForm');if(!f)return;
-  const msg=document.getElementById('ctMsg'),btn=f.querySelector('button');
-  const [fName,fMail,fText]=['[name=name]','[name=email]','[name=message]'].map(s=>f.querySelector(s)); // f.name은 폼 자체 이름이라 따로 찾음
-  const say=(t,c='')=>{msg.textContent=t;msg.className='ct-msg '+c;};
-  document.getElementById('ctJump').addEventListener('click',e=>{e.preventDefault();f.classList.remove('flash');void f.offsetWidth;f.classList.add('flash');fName.focus();});
-  f.addEventListener('keydown',e=>e.stopPropagation()); // 입력 중 방향키·PageDown 등이 장면 이동으로 먹히지 않게
-  f.addEventListener('wheel',e=>e.stopPropagation(),{passive:true});
-  f.addEventListener('submit',async e=>{
-    e.preventDefault();
-    const name=fName.value.trim(),email=fMail.value.trim(),text=fText.value.trim();
-    const bad=[[fName,!name],[fMail,!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)],[fText,!text]];
-    bad.forEach(([el,b])=>el.classList.toggle('bad',b));
-    if(bad.some(([,b])=>b)){say('빈 칸이나 이메일 형식을 확인해 주세요','err');return;}
-    if(!CONTACT_ENDPOINT){
-      location.href=`mailto:jodabin9098@gmail.com?subject=${encodeURIComponent('[포트폴리오] '+name+'님의 메시지')}&body=${encodeURIComponent(text+'\n\n— '+name+' ('+email+')')}`;
-      say('메일 앱에서 보내기를 눌러 주세요');return;
-    }
-    btn.disabled=true;say('보내는 중…');
-    try{
-      const r=await fetch(CONTACT_ENDPOINT,{method:'POST',headers:{'Accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({name,email,message:text})});
-      if(!r.ok)throw 0;
-      f.reset();say('잘 보내졌어요. 곧 답장 드릴게요!','ok');
-    }catch(err){say('보내지 못했어요. 잠시 뒤 다시 시도해 주세요','err');}
-    btn.disabled=false;
-  });
-})();
 /* ===== 장면(한 화면) 진행 =====
-   페이지를 아래로 스크롤하지 않고, 늘 100vh 한 화면 안에서 장면만 바뀜: 01 LOOK(빛) → 02 FIND(십자말풀이) → 03 REVEAL(기획 의도).
+   페이지를 아래로 스크롤하지 않고, 늘 100vh 한 화면 안에서 장면만 바뀜: 01 LOOK(빛) → 02 FIND(형광펜) → 03 REVEAL(기획 의도).
    위쪽 내비게이션·아래 이전/다음 버튼·휠(한 번)·PageUp/PageDown·스와이프로 이동.
-   앞으로 가려면 그 장면을 끝내야 함(빛 3개를 제자리에 / 십자말풀이를 모두 풀기). 뒤로는 언제든 */
+   앞으로 가려면 그 장면을 끝내야 함(빛 3개를 제자리에 / FIND는 형광펜이 다 칠해지면). 뒤로는 언제든 */
 const Scenes=(()=>{
-  const heroWrap=document.getElementById('heroWrap'),cw=document.getElementById('cw'),end=document.getElementById('end');
+  const heroWrap=document.getElementById('heroWrap'),cw=document.getElementById('find'),end=document.getElementById('end'); // cw = 02 FIND 장면(변수 이름만 예전 그대로)
   const nav=document.getElementById('snav'),navBtns=[...nav.querySelectorAll('[data-s]')];
   const ctl=document.getElementById('sctl'),prevB=document.getElementById('scPrev'),nextB=document.getElementById('scNext'),msg=document.getElementById('sctlMsg');
   const NAMES=['LOOK','FIND','REVEAL'];
-  const LOCK_MSG=['빛 세 개를 모두 제자리에 놓으면 다음으로 넘어갈 수 있어요','십자말풀이를 모두 풀면 다음 장면이 열려요',''];
+  const LOCK_MSG=['빛 세 개를 모두 제자리에 놓으면 다음으로 넘어갈 수 있어요','형광펜이 다 칠해지면 다음 장면으로 넘어갈 수 있어요',''];
   let cur=0,busy=false,started=false;
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const canLeave=i=>i===0?!!window.__heroDone:i===1?!!cwSolved:false;
+  const canLeave=i=>i===0?!!window.__heroDone:i===1?!!(window.Find&&Find.done):false;
   const reachable=t=>{for(let i=0;i<t;i++)if(!canLeave(i))return false;return true;};
   const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
   const sine=t=>-(Math.cos(Math.PI*t)-1)/2; // 빛 전환용: 처음·끝이 더 부드러운 곡선
@@ -1991,34 +899,11 @@ const Scenes=(()=>{
     msg.classList.toggle('ok',ok);
     document.body.dataset.scene=NAMES[cur].toLowerCase();
   }
-  /* 십자말풀이 ↔ REVEAL 도트 전환: 격자 칸 크기(십자말풀이 칸과 같은 자리)의 배경색 도트가 화면 가운데부터
-     조금씩 무작위로 퍼지며 덮고 → 장면을 바꾼 뒤 → 같은 순서로 작아지며 열림 */
-  const wipeCv=document.createElement('canvas');wipeCv.className='dot-wipe';wipeCv.setAttribute('aria-hidden','true');document.body.appendChild(wipeCv);
-  const wHash=(x,y)=>{let h=(x*374761393+y*668265263)|0;h=(h^(h>>>13))*1274126177|0;return((h^(h>>>16))>>>0)/4294967295;};
-  function dotWipe(swap){
-    if(reduce){swap();return Promise.resolve();}
-    const W=innerWidth,H=innerHeight,dpr=Math.min(2,devicePixelRatio||1),x=wipeCv.getContext('2d');
-    wipeCv.width=Math.round(W*dpr);wipeCv.height=Math.round(H*dpr);wipeCv.style.width=W+'px';wipeCv.style.height=H+'px';wipeCv.style.display='block';x.setTransform(1,0,0,1,0,0); // 기기 픽셀 단위로 직접 그림(배율 125%·150%에서도 칸 사이 틈이 안 생기게)
-    const C=Math.max(12,60*CW_K*Math.min(W/1920,H/1080));
-    let fx=0,fy=0;const g=document.getElementById('grid');if(g){const r=g.getBoundingClientRect();if(r.width){fx=r.left;fy=r.top;}}
-    const md=v=>((v%C)+C)%C,ox=md(fx)-C,oy=md(fy)-C,cols=Math.ceil((W-ox)/C)+1,rows=Math.ceil((H-oy)/C)+1;
-    const cells=[];
-    for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
-      const X=Math.round((ox+i*C)*dpr),Y=Math.round((oy+j*C)*dpr); // 칸 경계를 기기 픽셀 정수로: 다음 칸 시작 = 이 칸 끝
-      const dx=(i+.5)/cols-.5,dy=((j+.5)/rows-.5)*rows/cols; // 예전 '도트 등장' 시안 B: 가운데에서 바깥으로(약간 무작위)
-      cells.push({X,Y,w:Math.round((ox+(i+1)*C)*dpr)-X,h:Math.round((oy+(j+1)*C)*dpr)-Y,d:Math.min(1,Math.hypot(dx,dy)/.62)*.75+wHash(i,j)*.18});
-    }
-    const BG='#212124',DUR=950,SPAN=.16;
-    // 칸 크기는 그대로, 칸마다 배경색이 옅어지거나 짙어지기만 함(커지지 않음). 칸 경계는 정수 픽셀로 딱 붙게
-    const pass=(closing)=>new Promise(res=>{const t0=performance.now();x.fillStyle=BG;(function f(now){
-      const T=Math.min(1,(now-t0)/DUR);x.clearRect(0,0,wipeCv.width,wipeCv.height);
-      cells.forEach(c=>{
-        const t=Math.max(0,Math.min(1,(T*1.05-c.d)/SPAN)),a=closing?t:1-t;
-        if(a<=0)return;x.globalAlpha=a;x.fillRect(c.X,c.Y,c.w,c.h);
-      });
-      x.globalAlpha=1;T<1?requestAnimationFrame(f):res();})(t0);});
-    return pass(true).then(()=>{swap();x.fillStyle=BG;x.fillRect(0,0,wipeCv.width,wipeCv.height);return new Promise(r=>setTimeout(r,60));})
-      .then(()=>pass(false)).then(()=>{x.clearRect(0,0,wipeCv.width,wipeCv.height);wipeCv.style.display='none';});
+  /* FIND ↔ REVEAL 전환: FIND 글이 흐려지며 사라지고 → REVEAL 화면이 나타난 뒤 종이들이 차례로 놓임(Paper.enter) */
+  async function fadeSwap(from,to){
+    vis(to,true);to.style.opacity=0;
+    await tween(650,t=>{from.style.opacity=1-t;to.style.opacity=t;});
+    vis(from,false);from.style.opacity='';to.style.opacity=1;
   }
   async function step(d){
     const from=cur,to=cur+d;
@@ -2033,10 +918,10 @@ const Scenes=(()=>{
       vis(heroWrap,true);
       await tween(2600,t=>{const u=1-t;__heroCw.set(Math.min(1,u/.3),Math.max(0,(u-.3)/.7));},sine);
       vis(cw,false);
-    }else if(from===1&&to===2){ // 도트 전환: 칸만 한 색 도트가 가운데서 퍼지며 화면을 덮고 → 같은 순서로 열리며 REVEAL이 드러남
-      await dotWipe(()=>{vis(end,true);end.style.opacity=1;vis(cw,false);cw.style.transform='';end.classList.add('on');});
+    }else if(from===1&&to===2){
+      window.Paper&&Paper.reset();await fadeSwap(cw,end);end.classList.add('on');window.Paper&&Paper.enter();
     }else if(from===2&&to===1){
-      await dotWipe(()=>{vis(cw,true);cw.style.opacity=1;end.classList.remove('on');vis(end,false);cw.style.transform='';});
+      end.classList.remove('on');await fadeSwap(end,cw);
     }
     cur=to;busy=false;refresh();
   }
@@ -2048,7 +933,7 @@ const Scenes=(()=>{
   let capShown=false;
   function showCap(){
     if(capShown)return;capShown=true;
-    const c=document.getElementById('cwCap');if(!c)return;
+    const c=document.getElementById('findCap');if(!c)return;
     c.classList.add('show');setTimeout(()=>c.classList.remove('show'),6000);
   }
   // 이전·다음·내비게이션
@@ -2068,7 +953,7 @@ const Scenes=(()=>{
   },{passive:false});
   addEventListener('keydown',e=>{
     if(!started||e.target.closest?.('input,textarea'))return;
-    if(e.defaultPrevented||busy)return; // 십자말풀이 칸을 고른 상태면 방향키는 칸 이동에 씀(위 핸들러가 먼저 처리)
+    if(e.defaultPrevented||busy)return;
     const NEXT=['PageDown','ArrowDown','ArrowRight'],PREV=['PageUp','ArrowUp','ArrowLeft'];
     if(NEXT.includes(e.key)){e.preventDefault();if(e.repeat||performance.now()<wheelLock)return;wheelLock=performance.now()+600;canLeave(cur)&&cur<2?step(1):nope();}
     else if(PREV.includes(e.key)){e.preventDefault();if(e.repeat||performance.now()<wheelLock)return;wheelLock=performance.now()+600;step(-1);}
@@ -2084,22 +969,18 @@ const Scenes=(()=>{
   return {
     refresh,go,
     start(){if(started)return;started=true;nav.classList.add('show');ctl.classList.add('show');refresh();},
-    // 상세 페이지에서 돌아왔을 때: 모션 없이 바로 십자말풀이 화면으로
-    jumpToCw(){vis(cw,true);__heroCw.set(1,1);vis(heroWrap,false);cur=1;capShown=true;this.start();refresh();}
+    // 상세 페이지에서 돌아왔을 때: 모션 없이 바로 FIND 화면으로(형광펜은 이미 칠해진 상태)
+    jumpToFind(){vis(cw,true);__heroCw.set(1,1);vis(heroWrap,false);window.Find&&Find.play(true);cur=1;capShown=true;this.start();refresh();}
   };
 })();
 window.Scenes=Scenes;
-/* 상세 페이지에서 돌아온 경우(새로 불러와졌을 때): 인트로·빛 퍼즐을 건너뛰고, 풀어뒀던 단어를 그대로 채운 십자말풀이 화면으로 */
+/* 상세 페이지에서 돌아온 경우(새로 불러와졌을 때): 인트로·빛 퍼즐을 건너뛰고 형광펜이 칠해진 FIND 화면으로 */
 (()=>{
   let back=false;try{back=sessionStorage.getItem('pf-return')==='1';sessionStorage.removeItem('pf-return');}catch(e){}
   if(!back)return;
   const intro=document.getElementById('intro');intro.classList.add('done');intro.style.display='none';
   window.__heroComplete();
-  Scenes.jumpToCw();
-  let solved=[];try{solved=JSON.parse(sessionStorage.getItem('pf-solved')||'[]');}catch(e){}
-  window.__quiet=true;window.__tipShown=true;
-  solved.forEach(i=>{celebrated.add(i);wordCells(i).forEach(el=>putFns[el.dataset.key](el.dataset.ch));});
-  window.__quiet=false;
+  Scenes.jumpToFind();
 })();
 
 /* 내비게이션 눈: 평소엔 감겨 있어 시선을 끌지 않음. 장면이 바뀌면 눈을 뜨고 그 장면 쪽(LOOK 왼쪽 · FIND 아래 · REVEAL 오른쪽)을 본 뒤 몇 초 뒤 다시 감음.

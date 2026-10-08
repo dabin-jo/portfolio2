@@ -40,7 +40,7 @@ body{background:transparent;color:#000;font-family:'A2z',-apple-system,sans-seri
 /* 기여도 아랫선(y=164)에서 36 아래 */
 .pd-body{margin-top:max(20px,calc(var(--u)*36));
   max-width:max(340px,calc(var(--u)*900))}
-.pd-desc{font-size:max(13px,calc(var(--u)*16));font-weight:300;letter-spacing:-.06em;line-height:1.6;word-break:keep-all}
+.pd-desc{font-size:clamp(11px,calc(var(--u)*16),12px);font-weight:300;letter-spacing:-.06em;line-height:1.6;word-break:keep-all}
 /* 사용 툴: 자료 윗변(y=585) 96 위(y=489) 오른쪽 끝(x=1840)에 63×63 칸. 아이콘 높이 31로 맞추고 회색(#9a9a9a) — 올리면 검정.
    자료가 화면 높이 기준(54.2vh)이라 같은 기준으로 붙임 */
 .pd-tools{position:absolute;right:calc(var(--u)*80);top:calc(54.2vh - var(--u)*96);display:flex;list-style:none}

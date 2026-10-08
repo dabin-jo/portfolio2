@@ -19,7 +19,6 @@ body{background:#080809;color:#fff;font-family:'A2z',-apple-system,sans-serif;ov
    바꾸고, 그 위의 섹션들은 전부 투명하게 둬서 항상 같은 배경이 이어져 보이게 함 */
 #bgLayer{position:fixed;inset:0;background:#080809;pointer-events:none}
 
-
 /* ---------- 0. INTRO (스위치) ---------- */
 body.lock{overflow:hidden}
 #intro{position:fixed;inset:0;background:#080809;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1s ease,visibility 1s}
@@ -55,9 +54,7 @@ body.lock{overflow:hidden}
    필요가 없어 가벼움). overlay 블렌드라 밝은/어두운 영역 모두에 은은하게만 섞여 들어감 */
 .hero .grain{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-.cols{position:relative;min-height:100vh;display:grid;grid-template-columns:1.2fr .9fr 1.1fr;gap:3vw;padding:6vh 3vw 9vh}
-.col{display:flex;flex-direction:column;justify-content:space-between;gap:4vh}
-.col .grp{display:flex;flex-direction:column;gap:4vh}
+
 #hc,#cc{position:absolute;inset:0;width:100%;height:100%;display:block}
 .bgc{position:absolute;inset:0;background:
   radial-gradient(60% 70% at 0% 0%,#ffcfe0 0%,transparent 70%),
@@ -69,7 +66,7 @@ body.lock{overflow:hidden}
 .hx{position:relative;padding:0;color:#0b0b0b;line-height:1.4;pointer-events:none;user-select:none;-webkit-user-select:none}
 .hx h1{font-weight:500;font-size:clamp(34px,5.4vw,96px);letter-spacing:-.02em;line-height:1.05}
 .hx h2{font-weight:600;font-size:clamp(12px,1.2vw,19px);letter-spacing:.18em;margin-bottom:.6vw}
-.hx p,.hx li{font-size:clamp(11px,1vw,15px);list-style:none}
+.hx p,.hx li{font-size:clamp(11px,1vw,12px);list-style:none}
 .hx .big{font-size:clamp(16px,1.9vw,32px);font-weight:500;line-height:1.35}
 .hx small{display:block;font-size:10px;letter-spacing:.3em;margin-bottom:.8vw;font-weight:600}
 .hero{touch-action:pan-y;user-select:none;-webkit-user-select:none}
@@ -86,167 +83,15 @@ body.lock{overflow:hidden}
 .tb h1{font-weight:300;font-size:clamp(28px,3vw,46px);line-height:1.05;letter-spacing:.01em}
 .tb h2{font-weight:600;font-size:clamp(12px,1.1vw,16px);letter-spacing:.22em;margin-top:.6em}
 .tb hr{border:0;border-top:1px solid currentColor;opacity:.4;margin:.9em auto;width:80%}
-.tb p{font-size:clamp(11px,.95vw,14px);line-height:1.7;opacity:.9}
-.tb ul{list-style:none;font-size:clamp(11px,.95vw,13px);line-height:1.9;letter-spacing:.08em;display:inline-block;text-align:left}
+.tb p{font-size:clamp(11px,.95vw,12px);line-height:1.7;opacity:.9}
+.tb ul{list-style:none;font-size:clamp(11px,.95vw,12px);line-height:1.9;letter-spacing:.08em;display:inline-block;text-align:left}
 .tb ul.sk li{display:flex;align-items:center;gap:.6em}
 .tb ul.sk b{display:inline-flex;align-items:center;justify-content:center;width:1.8em;height:1.8em;border:1px solid currentColor;border-radius:5px;font-size:.8em;opacity:.85}
 .tb-a{--tc:#7cd9b8;--tg:rgba(59,191,154,.55);left:14vw;top:15vh;text-align:center}
 .tb-b{--tc:#f19a9c;--tg:rgba(232,90,114,.55);right:14vw;left:auto;top:15vh;text-align:center}
 .tb-c{--tc:#8fb0e0;--tg:rgba(63,102,194,.55);left:50%;top:58vh;transform:translateX(-50%);text-align:center}
 
-/* ---------- 3. CROSSWORD ---------- */
-/* 피그마 원본(node 75:308)이 1920x1080 캔버스 그대로 그려져 있어서, 그 실측 px 좌표를 그대로 쓰는
-   1920x1080 "stage"를 만들고 화면 크기에 맞춰 transform:scale()로 통째로 축소/확대함.
-   이러면 글자 크기·칸 크기·여백 비율이 전부 원본과 똑같이 유지된 채 항상 100vh 안에 꽉 들어참. */
-.cw{position:relative;background:transparent;color:#111;height:100vh;overflow:hidden} /* 배경은 #bgLayer가 담당 */
-/* left/top는 JS(fit())가 매번 픽셀로 직접 계산해서 넣음 — %+transform 조합은 배율에 따라
-   어긋나기 쉬워서, transform-origin을 0 0으로 고정하고 순수 scale()만 적용 */
-.cw-stage{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:0 0;
-  transform:scale(var(--s,1));font-family:'A2z',-apple-system,sans-serif}
-/* 자동으로 풀기 + 힌트 두 개를 같은 자리(원래 자동 풀기 버튼이 있던 우측 상단)에 나란히 놓음.
-   버튼마다 폭이 달라서 left를 일일이 계산하는 대신 flex로 오른쪽부터 채워나가게 함 */
-.cw-toolbar{position:absolute;z-index:4;right:75px;top:48px;display:flex;flex-direction:row-reverse;gap:8px}
-.cw-auto{position:static;border-radius:10px!important;display:inline-flex;align-items:center;justify-content:center;text-align:center;background:#cfff3d;color:#111;border:0;border-radius:12px;
-  padding:9px 22px;font-size:16px;font-weight:600;letter-spacing:-.03em;cursor:pointer;font-family:inherit;white-space:nowrap}
-.cw-auto:hover{background:#bdf01f}
-.cw-hint:disabled{background:#e5e5e5;color:#aaa;cursor:not-allowed}
-/* 버튼별 색 — 히어로 빛 색(살구·민트·초록)에서 가져옴 */
-#cwHintLetter{background:#FEDCB7}#cwHintLetter:hover{background:#FBCB9C}
-#cwHintWord{background:#CFF0E7}#cwHintWord:hover{background:#B5E6D8}
-#cwAuto{background:#A0FFB2;padding-top:8px;padding-bottom:10px} /* 받침이 많은 글자(십·말·풀)라 눈으로 보기에 처져 보여서 1px만 올림 */#cwAuto:hover{background:#80F797}
-#cwHintLetter:disabled,#cwHintWord:disabled{background:#e5e5e5;color:#aaa}
-.cw-inner{position:absolute;left:331px;top:81px;--c:60px} /* 피그마 225:2641 격자(340,88 · 칸 59px)와 가운데를 맞춤 */
-.grid{position:relative;z-index:2}
-/* 칸 테두리를 각 칸의 개별 CSS border로 그리면(음수 margin으로 겹치든, 한쪽만 지우든) 서로 다른 DOM
-   요소라 배율(scale) 아래서 각각 다르게 서브픽셀 반올림돼 모서리에 작은 틈/삐침이 생김.
-   그래서 격자선은 전부 .gridlines라는 SVG 하나에 몰아서 한 번에 그림 — 하나의 렌더링 패스라 절대 어긋나지 않음 */
-.gridlines{position:absolute;left:0;top:0;pointer-events:none;z-index:3}
-.gridlines line{stroke:#111;stroke-width:1px;shape-rendering:crispEdges}
-.cell{position:absolute;width:var(--c);height:var(--c);background:rgba(255,255,255,.26); /* 고르지 않은 칸은 어둡게(고른 단어만 환하게 떠 보이도록) */
-  display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:400;cursor:pointer;
-  opacity:0;transform:scale(.6);transition:opacity .5s,transform .5s,background .25s,color .25s}
-.cell.in{opacity:1;transform:none}
-.cell sup{position:absolute;left:4px;top:2px;font-size:12px;font-weight:400}
-.cell.x{background:rgba(255,255,255,.4)} /* 교차 칸: 한 톤 밝게 */
-/* 고른 단어: 칸은 바탕을 비우고, 아래 깔린 단어 전체 빛 판(.word-glow)이 한 덩어리로 보이게 */
-.cell.on{background:transparent;transition:background .25s}
-.word-glow{position:absolute;z-index:0;pointer-events:none;opacity:0;transition:opacity .3s ease}
-.word-glow.show{opacity:1;transition:none}
-.word-glow.ghost{transition:none} /* 꺼지는 중인 빛(깜빡임은 script.js glowOff) */
-.word-glow:not(.show):not(.ghost){transition:none} /* 꺼질 땐 복제본이 깜빡이며 대신 사라짐 */ /* 켜질 땐 바로(칸이 먼저 비어 어두워 보이지 않게), 꺼질 때만 서서히 */
-.cell.flash{background:var(--rb,#fff4b8)} /* 등장할 때도 마우스 올렸을 때와 같은 대각선 무지개 색으로 반짝임 */
-.cell.over{background:#fff3b0;outline:2px dashed #111}
-.cell.selcell{outline:2px solid #111;outline-offset:-2px}
-.cell .ch{pointer-events:none}
-/* 정답/오답 피드백 + 힌트로 채운 글자 표시. .correct는 .on/.flash보다 뒤에 있어야(동일 우선순위) 항상 초록이 이김 */
-.cell.correct{background:var(--wc,#b7e4c7)}
-.cell.locked{cursor:default}
-.cell.wrong{outline:2px solid #e5484d;animation:cell-shake .3s}
-.cell .ch.hint-ch{color:#9a9a9a}
-@keyframes cell-shake{
-  0%,100%{transform:translateX(0)}
-  25%{transform:translateX(-6px)}
-  75%{transform:translateX(6px)}
-}
-.tray{position:absolute;left:0;top:960px;width:1900px;z-index:5}
-.tray h4{font-size:11px;letter-spacing:.25em;color:#999;font-weight:500;padding-bottom:8px;border-bottom:1px solid #ddd;margin-bottom:10px}
-.tray .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid #111;background:#fff;font-weight:600;font-size:16px;cursor:grab;user-select:none}
-.chip:active{cursor:grabbing;background:#ffe680}
-
-/* 배경 장식(피그마 Union 애셋) + 호버 시 나오는 원본 그림.
-   피그마엔 회색 실루엣 프레임(75:308)과 컬러 일러스트 프레임(97:130)이 따로 있고, 같은 캐릭터라도 두
-   프레임에서 박스 크기/위치가 다름. 컨테이너(.gray)를 어느 한쪽 박스에 맞추고 다른 이미지를 거기에
-   억지로 100% 채우면(예전 시도) 그 이미지가 원래 비율과 다르게 늘어나 보이는 문제가 생김.
-   그래서 .gray는 두 박스를 모두 담는 "합집합" 박스로 두고, .g-base/.g-reveal 각각은 원래 피그마 크기
-   그대로 자기 위치에 절대좌표로 배치한다 — 어느 쪽도 늘어나거나 찌그러지지 않음 */
-/* 장식용 컬러 사각 박스 — 위치/색은 script.js의 decoBoxes 배열(피그마 실측값)이 넣어줌 */
-.deco-box{position:absolute;width:60px;height:60px;z-index:0;pointer-events:none}
-.gray{position:absolute;z-index:1;cursor:pointer}
-.gray img{position:absolute;display:block;object-fit:cover;transition:opacity .5s ease,filter .5s ease}
-.gray .g-base{opacity:.17;filter:brightness(0)} /* 검정 실루엣을 옅게 → 배경(#212124)의 푸른 기를 그대로 품은 차가운 그림자(회색으로 칠하면 상대적으로 누렇게 보였음) */
-.gray .g-reveal{opacity:0;filter:blur(14px) grayscale(.5)}
-.gray.cur .g-base{opacity:0}
-.gray.cur .g-reveal{opacity:1;filter:blur(0) grayscale(0)}
-
-/* 위치·크기·좌우반전 = 피그마 225:2641(Union 225:2642~2647) 실측. 호버 그림(.g-reveal)은 실루엣과의 비율을 그대로 유지 */
-.g1{left:945.32px;top:135.58px;width:208.24px;height:311.96px} /* 225:2642 · 원래 크기의 0.78배 */
-.g1 .g-base{left:16.68px;top:34.42px;width:151px;height:250px}
-.g1 .g-reveal{left:0;top:0;width:100%;height:100%}
-
-.g2{left:1104.74px;top:96.53px;width:481.4px;height:481.4px} /* 225:2643 · 0.8456배 + 좌우반전 */
-.g2 .g-base{left:142.26px;top:38.47px;width:230px;height:381px;transform:scaleX(-1)}
-.g2 .g-reveal{left:0;top:0;width:100%;height:100%;transform:scaleX(-1)}
-
-/* g3(청년/장바구니): 단일 박스를 base/reveal이 함께 씀 */
-.g3{left:353px;top:472px;width:135px;height:380px} /* 225:2644 */
-.g3{overflow:hidden}
-.g3 .g-base{left:0;top:0;width:100%;height:100%}
-.g3 .g-reveal{left:0;top:0;width:100%;height:100%;transform:scale(-1.3,1.3)} /* 원본이 좌우 반대로 그려져 있어 반전 + 실루엣 박스가 좁아 인물이 작아 보여서 확대 */
-
-.g4{left:91.64px;top:530.22px;width:252.93px;height:331.09px} /* 225:2645 */
-.g4 .g-base{left:2.36px;top:14.78px;width:250px;height:304px}
-.g4 .g-reveal{left:0;top:0;width:100%;height:100%}
-
-/* g5(펭귄/집메이트): 국순당 세로줄 오른쪽 · 집메이트 가로줄 끝 옆 빈자리, 좌우반전(실루엣·그림 함께) */
-.g5{left:1370px;top:705px;width:354.56px;height:308.02px}
-.g5 .g-base{left:0;top:0;width:100%;height:100%;transform:scaleX(-1)}
-.g5 .g-reveal{left:-16px;top:0;width:381px;height:309px;object-fit:fill} /* g5.svg(381x309)는 원래 반전된 방향이라 그대로 두면 실루엣과 맞음 */
-
-.g6{left:399px;top:131px;width:270px;height:326px} /* 225:2647 · 약 0.79배 */
-.g6 .g-base{left:0;top:0;width:100%;height:100%}
-.g6 .g-reveal{left:0;top:0;width:100%;height:100%}
-
-.g7{left:755px;top:659px;width:211px;height:338px} /* AI와 디자인의 상관관계(피그마 232:3735 실루엣 · 232:3737 그림) */
-.g7 .g-base{left:0;top:0;width:100%;height:100%}
-.g7 .g-reveal{left:0;top:0;width:100%;height:100%;object-fit:contain}
-
-/* 절 패널 (가로 / 세로) — 피그마 실측 위치/폭 그대로.
-   z-index를 안 주면 기본값(auto)이라 .gray(z-index:1) 장식 이미지가 이 텍스트 위를 덮어버림 —
-   명시적으로 .gray보다 높여서 항상 텍스트가 이미지 위에 오도록 함 */
-.pnl{position:absolute;z-index:5}
-.pa{left:1253px;top:200px;width:505px}
-.pd{left:115px;top:773px;width:506px}
-.pnl h4{font-size:26px;font-weight:400;letter-spacing:-.04em;color:#111;margin-bottom:12px}
-.it{padding:3px 0;cursor:pointer;color:#8a8a8a;transition:color .3s}
-.it .r1{display:flex;align-items:baseline;gap:4px}
-.it .n{font-size:11px;letter-spacing:-.04em;flex:none}
-.it .t{font-size:19px;letter-spacing:-.04em;font-weight:400}
-.it .g{display:none}
-.it .d{display:none;margin-top:2px;font-size:12px;line-height:1.6;color:inherit}
-.it.act{color:#111}
-.it.act .d{display:block}
-.it.done .t::after{content:' ✓';color:#2e9e5b}
-.fade{animation:fd .4s}
-@keyframes fd{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-/* ===== 마지막 섹션: 십자말풀이 격자를 이어받은 픽셀 놀이판 (script.js '픽셀 놀이판') ===== */
-.end{position:relative;height:100vh;min-height:620px;margin-top:16vh;background:#212124;color:#eee;overflow:hidden;font-family:'A2z',-apple-system,sans-serif;cursor:crosshair;touch-action:pan-y;user-select:none}
-.px-grid{position:absolute;inset:0;--c:56px;--ox:0px;--oy:0px}
-/* 격자선: 아주 연하게 + 위쪽은 투명했다가 아래로 갈수록 서서히 나타남(앞 섹션에서 자연스럽게 이어지도록) */
-.px-grid::before{content:'';position:absolute;inset:0;pointer-events:none;
-  background-image:linear-gradient(#2d2d31 1px,transparent 1px),linear-gradient(90deg,#2d2d31 1px,transparent 1px);
-  background-size:var(--c) var(--c);background-position:var(--ox) var(--oy);
-  -webkit-mask-image:linear-gradient(to bottom,transparent 0,rgba(0,0,0,.35) 18%,#000 55%);mask-image:linear-gradient(to bottom,transparent 0,rgba(0,0,0,.35) 18%,#000 55%)}
-.px{position:absolute;width:var(--c);height:var(--c);pointer-events:none}
-/* 지나간 칸: 연한 회색으로 채워졌다가 스르륵 사라짐 */
-.px.trail{transition:background-color 1.3s cubic-bezier(.3,0,.2,1),opacity 1.3s ease}
-/* 꾹 누른 채 칠한 칸(도트 그림) */
-.px.paint{background:var(--pc)!important;transition:none}
-.end-top{position:absolute;left:3vw;right:3vw;top:3vh;display:flex;justify-content:space-between;align-items:center;font-size:clamp(16px,1.6vw,22px);z-index:3;pointer-events:none}
-.end-top b{font-size:clamp(24px,2.6vw,36px);font-weight:700}
-.end-top a{color:#111;text-decoration:none;pointer-events:auto}
-.px-hint{position:absolute;left:50%;bottom:calc(4vh + 26px);transform:translateX(-50%);z-index:3;pointer-events:none;
-  font-size:12px;letter-spacing:.08em;color:#9a9a9a;background:rgba(20,20,22,.8);padding:6px 14px;border-radius:99px;white-space:nowrap;transition:color .4s}
-.px-tools{position:absolute;right:3vw;top:calc(3vh + 44px);z-index:3;display:flex;gap:8px}
-.px-tools button{font:inherit;font-size:12px;padding:7px 14px;border-radius:99px;border:1px solid #111;background:#f5f5f5;color:#111;cursor:pointer}
-.px-tools button:hover{background:#111;color:#fff}
-.end-h{position:absolute;right:3vw;bottom:9vh;text-align:right;font-weight:400;letter-spacing:-.05em;line-height:1.02;font-size:clamp(34px,4.4vw,88px);z-index:3;pointer-events:none}
-.end-cta{position:absolute;left:3vw;bottom:9vh;font-size:14px;z-index:3}
-.end-cta a{display:inline-block;margin-top:10px;padding:12px 24px;border-radius:99px;background:#111;color:#fff;text-decoration:none}
-footer{position:absolute;left:0;right:0;bottom:0;z-index:3;color:#999;text-align:center;font-size:11px;line-height:16px;letter-spacing:.3em;padding:0 0 3vh;pointer-events:none}
-@media(max-width:700px){.hero .tr{top:6vh}.hero .tl{top:22vh}.black{margin-left:0;width:100%}}
-/* 드래그 앤 드롭 글자 칩 영역은 쓰지 않음(키보드 입력 + 힌트 버튼으로 대체) */
-.tray{display:none!important}
+@media(max-width:700px){.hero .tr{top:6vh}.hero .tl{top:22vh}}
 /* SCROLL ↓ 안내: 위아래로 부드럽게 흔들리며 아래로 스크롤하도록 유도(가운데 정렬용 translateX(-50%)는 유지) */
 .hero .hh.scroll-cue{color:#aaa;font-size:12px;animation:scrollCue 1.6s ease-in-out infinite}
 @keyframes scrollCue{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,10px)}} /* opacity는 넣지 않음: 스크롤하면 JS가 opacity로 사라지게 하는데, 애니메이션 opacity가 그걸 덮어써서 계속 보였음 */
@@ -256,8 +101,8 @@ footer{position:absolute;left:0;right:0;bottom:0;z-index:3;color:#999;text-align
 .tb-a h1{font-size:clamp(40px,4.4vw,72px);font-weight:500;line-height:1.05;letter-spacing:-.02em;white-space:nowrap}
 .tb-a h1 .en{font-size:.46em;font-weight:400;letter-spacing:-.01em;margin-left:.25em}
 .tb-a h2{font-size:clamp(14px,1.45vw,22px);font-weight:400;letter-spacing:-.01em;margin-top:.9em;white-space:nowrap}
-.tb-a p{font-size:clamp(14px,1.3vw,20px);line-height:1.5;margin-top:1em;opacity:1;word-break:keep-all}
-.tb-a ul.kw{display:block;margin-top:1.1em;font-size:clamp(13px,1.15vw,18px);line-height:1.6;letter-spacing:-.01em}
+.tb-a p{font-size:clamp(11px,1.3vw,12px);line-height:1.5;margin-top:1em;opacity:1;word-break:keep-all}
+.tb-a ul.kw{display:block;margin-top:1.1em;font-size:clamp(11px,1.15vw,12px);line-height:1.6;letter-spacing:-.01em}
 .tb-a ul.kw li::before{content:'✦';margin-right:.45em}
 /* 글자만 빛의 가운데로 옮김: .tb-a 상자 자체(=빛이 자리 잡는 기준 위치)는 그대로 두고,
    안의 글자들만 상대 위치로 오른쪽·아래로 이동 → 빛 위치는 안 바뀜. 값을 바꿔 미세 조정 가능 */
@@ -279,9 +124,9 @@ footer{position:absolute;left:0;right:0;bottom:0;z-index:3;color:#999;text-align
 .tb-a{height:19vw}
 .tb-b{width:340px;height:8.2vw;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1vw;text-align:center}
 .tb-b .tb-icon{width:clamp(36px,3.1vw,60px);height:auto;flex:none}
-.tb-b p{font-size:clamp(14px,1.35vw,24px);line-height:1.45;opacity:1;letter-spacing:-.02em;word-break:keep-all;white-space:nowrap}
+.tb-b p{font-size:clamp(11px,1.35vw,12px);line-height:1.45;opacity:1;letter-spacing:-.02em;word-break:keep-all;white-space:nowrap}
 .tb-c{width:340px;height:5.6vw;display:flex;align-items:center;justify-content:center}
-.tb-c ul.kw{display:block;text-align:left;font-size:clamp(13px,1.15vw,20px);line-height:1.45;letter-spacing:-.01em}
+.tb-c ul.kw{display:block;text-align:left;font-size:clamp(11px,1.15vw,12px);line-height:1.45;letter-spacing:-.01em}
 .tb-c ul.kw li::before{content:'✦';margin-right:.35em}
 /* 글자가 빛 한가운데 오도록: 빛은 각 글자 상자의 "중심"에 자리 잡으므로, 상자를 글자 크기에 딱 맞추고
    (고정 높이·글자만 옮기던 오프셋 제거) 상자 자체를 원하는 자리에 둠 → 빛 중심 = 글자 중심 */
@@ -300,8 +145,6 @@ footer{position:absolute;left:0;right:0;bottom:0;z-index:3;color:#999;text-align
 .tb-a{left:19.5vw;top:37vh}
 .tb-b{right:15.5vw;top:37vh}
 .tb-c{left:52.5%;top:59vh}
-/* 자동 풀기 → 다 채워지면 리셋 버튼으로 바뀜 */
-#cwAuto.is-reset{background:#FFD1DC}
 
 /* 켜기 전 스위치: 안쪽 동그라미가 오른쪽으로 살짝 움찔거리며 '눌러보고 싶게' 유도 */
 @keyframes swNudge{
@@ -329,12 +172,6 @@ footer{position:absolute;left:0;right:0;bottom:0;z-index:3;color:#999;text-align
 /* 히어로 빛 그레인: 검은 점만 찍는 노이즈라 어두운 배경은 그대로(밝아지지 않음), 빛 위에서만 필름 입자처럼 보임 */
 .hero .grain{opacity:.12;mix-blend-mode:normal;background-size:160px 160px;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.6 0 0 0 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-
-/* 십자말풀이 칸이 떨어져 쌓이는 등장 모션: 격자선·장식 박스는 처음엔 숨겨 두고, 떨어지는 동안 칸마다 자기 테두리 */
-.gridlines{opacity:0;transition:opacity .35s ease}
-.deco-box{opacity:0}.deco-box.in{opacity:1}
-/* 빛이 칸으로 번지며 켜지는 동안: 칸마다 따로 테두리를 두면 이미 있는 격자선 위에 칸이 한 겹 더 덧붙는 느낌이라 테두리 없이 색만 */
-.cell.dropping{transition:background .25s,color .25s}
 
 /* ===== 인트로 스위치 = 눈: 평소엔 가끔 오른쪽을 흘끗 보듯 데굴 굴러갔다 돌아옴(swNudge 대체).
    ===== */
@@ -380,45 +217,17 @@ footer{position:absolute;left:0;right:0;bottom:0;z-index:3;color:#999;text-align
 .sw.fadeout .knob{opacity:0;transition:opacity 1.4s ease .2s,left .7s,transform .7s}
 .sw.blink i.t{background:#161616}
 
-/* 맞힌 단어의 '버튼 칸' = 두께 있는 정육면체: 앞면(글자+꽃) · 옆면(↗) · 뒷면(글자+꽃) · 옆면(↗).
-   가끔(약 8초에 한 번) 한 바퀴 굴러 돌고, 마우스를 올리면 ↗ 면으로 돌아서 멈춤. 도는 동안 뒤로 보이는 칸은 살짝 어두운 '홈' */
-.cell.portal{cursor:pointer;z-index:4;perspective:900px;background:rgba(0,0,0,.06)!important;overflow:visible}
-.cell.portal > .ch,.cell.portal > sup{visibility:hidden}
-.cube{position:absolute;inset:0;transform-style:preserve-3d;transform:translateZ(calc(var(--c)/-2));
-  animation:cubeTurn 8s linear var(--spin-delay,0s) infinite}
-.cube .f{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--wc,#fff);
-  backface-visibility:hidden;animation:faceEdge 8s linear var(--spin-delay,0s) infinite}
 /* 정육면체 면 테두리는 돌아가는 동안에만 보이게: 멈춰 있을 땐 앞면이 칸 자리에 딱 겹쳐서 격자선(SVG)과
    면 테두리가 이중으로 그려져 선이 두꺼워 보였음 → 멈춰 있을 땐 격자선 하나만 보이고, 회전 구간(82~100%)에만 테두리 등장 */
 /* 테두리는 서서히 나타나고 사라지면 그 사이 칸 외곽선이 흐려졌다 다시 생기며 반짝여 보였음 →
    칸이 격자선 위로 올라오는 순간(82%)과 내려가는 순간(100%)에 정확히 맞춰 한 번에 켜고 끔.
    테두리 위치도 격자선과 같은 자리(왼·위는 안쪽, 오른·아래는 바깥쪽 1px)에 그려서, 막 돌기 시작/끝날 때 선이 두 줄로 보이지 않게 */
-@keyframes faceEdge{0%,63.9%{box-shadow:none}64%,74.9%{box-shadow:inset 1px 1px 0 #111,1px 1px 0 #111}75%,86.9%{box-shadow:none}87%,97.9%{box-shadow:inset 1px 1px 0 #111,1px 1px 0 #111}98%,100%{box-shadow:none}}
-.cell.portal:hover .cube .f{animation:none}
-/* 멈춰 있을 땐 칸이 격자선(z-index 3) 아래에 있어야 격자선이 가려지지 않음 → 회전하는 동안에만 격자선 위로 올라옴(입체가 선에 안 잘리게) */
-.cell.portal{z-index:2;animation:portalZ 8s linear var(--spin-delay,0s) infinite}
-@keyframes portalZ{0%,63.9%{z-index:2}64%,74.9%{z-index:4}75%,86.9%{z-index:2}87%,97.9%{z-index:4}98%,100%{z-index:2}}
-.cell.portal:hover{animation:none;z-index:2}
-@media (prefers-reduced-motion:reduce){.cell.portal{animation:none}}
-@media (prefers-reduced-motion:reduce){.cube .f{animation:none}}
-.cube .front{transform:translateZ(calc(var(--c)/2))}
-.cube .right{transform:rotateY(90deg) translateZ(calc(var(--c)/2))}
-.cube .back{transform:rotateY(180deg) translateZ(calc(var(--c)/2))}
-.cube .left{transform:rotateY(-90deg) translateZ(calc(var(--c)/2))}
-.cube .face-l::before{content:'';position:absolute;inset:14%;background:var(--fc,#FF928C);
-  -webkit-mask:var(--shape,url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-54%20-54%20108%20108'%3E%3Cg%20fill='%23000'%3E%3Ccircle%20cx='0'%20cy='-32'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='0'%20cy='32'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20r='30'/%3E%3C/g%3E%3C/svg%3E")) center/contain no-repeat;mask:var(--shape,url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-54%20-54%20108%20108'%3E%3Cg%20fill='%23000'%3E%3Ccircle%20cx='0'%20cy='-32'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='0'%20cy='32'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20r='30'/%3E%3C/g%3E%3C/svg%3E")) center/contain no-repeat}
-.cube .face-l span{position:relative}
-.cube .face-l sup{position:absolute;left:4px;top:2px;font-size:12px}
-.cube .face-a{background:var(--fc,#FF928C);font-size:26px}
+
 /* 회전은 96%에서 딱 끝내고 나머지는 멈춰 있음 + 끝부분이 너무 오래 늘어지지 않는 곡선. 거의 다 돌았는데 아직 입체 상태로 남아 있는
    구간이 길면(예전 100%까지) 화면 배율에 따라 칸이 1px쯤 어긋나 보였다가 제자리로 돌아오는 느낌이 났음 */
 /* 한 바퀴를 한 번에 휙 도는 대신: 1/4바퀴 돌아 ↗ 면을 잠깐 보여 주고 → 다시 1/4바퀴 돌아 뒷면(앞면과 같은 모양)에서 멈춤.
    -180°는 0°와 똑같이 보여서 다음 반복으로 자연스럽게 이어짐. 원근(perspective)도 멀리 둬서 도는 동안 칸이 부풀어 보이지 않게 */
-@keyframes cubeTurn{0%,64%{transform:translateZ(calc(var(--c)/-2)) rotateY(0);animation-timing-function:cubic-bezier(.45,0,.25,1)}
-  75%,87%{transform:translateZ(calc(var(--c)/-2)) rotateY(-90deg);animation-timing-function:cubic-bezier(.45,0,.25,1)}
-  98%,100%{transform:translateZ(calc(var(--c)/-2)) rotateY(-180deg)}}
-.cell.portal:hover .cube{animation:none;transform:translateZ(calc(var(--c)/-2)) rotateY(-90deg);transition:transform .5s cubic-bezier(.3,1.3,.5,1)}
-@media (prefers-reduced-motion:reduce){.cube{animation:none}}
+
 /* 상세 페이지로 넘어갈 때 화면을 밝은 회색으로 덮음 */
 body::after{content:'';position:fixed;inset:0;background:#f5f5f5;opacity:0;pointer-events:none;z-index:200;transition:opacity .5s ease}
 body.leaving::after{opacity:1;pointer-events:auto}
@@ -431,101 +240,24 @@ body.leaving::after{opacity:1;pointer-events:auto}
 @keyframes cubeTurnX{0%,64%{transform:translateZ(calc(var(--c)/-2)) rotateX(0);animation-timing-function:cubic-bezier(.45,0,.25,1)}
   75%,87%{transform:translateZ(calc(var(--c)/-2)) rotateX(-90deg);animation-timing-function:cubic-bezier(.45,0,.25,1)}
   98%,100%{transform:translateZ(calc(var(--c)/-2)) rotateX(-180deg)}}
-.cell.portal:hover .cube-x{transform:translateZ(calc(var(--c)/-2)) rotateX(-90deg)}
-
-/* ===== 단서 카드 덱 — 피그마 node 151:2220(342×169)을 1.5배로(--k) ===== */
-.pnl{display:none!important}
-.deck{--k:1.25;--t:.88;position:absolute;right:75px;top:112px;width:calc(342px*var(--k));z-index:6;user-select:none} /* 오른쪽 끝 = 위 버튼 줄. top은 아래 새(펭귄) 그림 머리 장식과 닿을락 말락 하지 않게 여유를 둔 값 */
-.dk-cards{position:relative;height:calc(150px*var(--k));touch-action:pan-y}
-.dk-card{position:absolute;inset:0;border-radius:calc(12px*var(--k));background:#fbfbfb;box-shadow:none;cursor:pointer;
-  transition:transform .55s cubic-bezier(.22,1,.36,1),opacity .45s ease,box-shadow .3s,background .4s;transform-origin:50% 50%}
-/* 카드 더미 기울기: 뒤 카드들이 위로 튀어나오지 않고 아래쪽으로만 살짝씩 비치게(실제로 카드를 겹쳐 놓은 느낌), 각도도 작게 */
-.dk-card[data-pos="0"]{transform:rotate(-.8deg);opacity:1}
-.dk-card[data-pos="1"]{transform:translate(5px,5px) rotate(1.3deg);opacity:1;background:#ececec}
-.dk-card[data-pos="2"]{transform:translate(-4px,9px) rotate(-2.1deg);opacity:1;background:#dcdcdc}
-.dk-card[data-pos="3"]{transform:translate(-4px,9px) rotate(-2.1deg);opacity:0;pointer-events:none}
-.dk-card > *{transition:opacity .35s .15s}
-.dk-card:not([data-pos="0"]) > *{opacity:0;transition:opacity .2s}
-
-/* 왼쪽: 도형 41 + 세로 번호(12px Medium) */
-.dk-side{position:absolute;left:calc(12px*var(--k));top:calc(12px*var(--k));width:calc(41px*var(--k));display:flex;flex-direction:column;align-items:center;gap:calc(2px*var(--k))}
-.dk-ic{display:block;width:calc(41px*var(--k));height:calc(41px*var(--k));background:#d9d9d9;transition:background .4s;
-  -webkit-mask:var(--shape,url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-54%20-54%20108%20108'%3E%3Cg%20fill='%23000'%3E%3Ccircle%20cx='0'%20cy='-32'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='0'%20cy='32'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20r='30'/%3E%3C/g%3E%3C/svg%3E")) center/contain no-repeat;mask:var(--shape,url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-54%20-54%20108%20108'%3E%3Cg%20fill='%23000'%3E%3Ccircle%20cx='0'%20cy='-32'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='0'%20cy='32'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20r='30'/%3E%3C/g%3E%3C/svg%3E")) center/contain no-repeat}
-.dk-card.solved .dk-ic{background:var(--fc)}
-.dk-no{display:flex;flex-direction:column;align-items:center;font-size:calc(12px*var(--k)*var(--t));font-weight:500;line-height:1.2;letter-spacing:-.05em;color:#000}
-.dk-no b{font-weight:500}
-/* 가운데: 제목 20 Medium → 글자 칸(21, 선 #939393, 1px 겹침) → 설명 14 Regular #444 */
-.dk-body{position:absolute;left:calc(69px*var(--k));top:calc(12px*var(--k));width:calc(221px*var(--k))}
-.dk-body h5{font-size:calc(20px*var(--k)*var(--t));font-weight:500;letter-spacing:-.05em;line-height:1.3;color:#000}
-.dk-boxes{display:flex;margin-top:calc(8px*var(--k))}
-.dk-boxes span{flex:none;width:min(calc(21px*var(--k)*var(--t)),calc((100% + var(--n)*1px)/var(--n)));aspect-ratio:1;border:1px solid #939393;margin-left:-1px;display:flex;align-items:center;justify-content:center;
-  font-size:calc(12px*var(--k)*var(--t));color:#111;background:transparent;transition:background .3s}
-.dk-boxes span:first-child{margin-left:0}
-.dk-card.solved .dk-boxes span{background:color-mix(in srgb,var(--fc) 22%,transparent)}
-.dk-body p{margin-top:calc(12px*var(--k));font-size:calc(14px*var(--k)*var(--t));font-weight:400;line-height:1.3;letter-spacing:-.05em;color:#444;word-break:keep-all}
-/* 오른쪽 위 버튼: '문제 풀기'(못 맞힌 단어 → 정답 채움) / '다시 풀기'(맞힌 단어 → 그 단어만 비움) */
-.dk-open{position:absolute;right:calc(12px*var(--k));top:calc(12px*var(--k));height:calc(28px*var(--k));padding:0 calc(12px*var(--k));border:0;border-radius:calc(8px*var(--k));
-  background:#CFF0E7;color:#111;font:inherit;font-size:calc(12px*var(--k));font-weight:500;letter-spacing:-.02em;cursor:pointer;white-space:nowrap;transition:background .25s}
-.dk-open:hover{background:#B5E6D8}
-.dk-card.solved .dk-open{background:#ececec;color:#555}
-.dk-card.solved .dk-open:hover{background:#e0e0e0;color:#111}
-.dk-card svg{width:calc(18px*var(--k));height:calc(18px*var(--k));fill:none;stroke:#000;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;position:relative}
-/* 아래 양쪽: 이전/다음 카드 단어의 도형(회색) 위에 ← → */
-.dk-prev,.dk-next{position:absolute;bottom:calc(13px*var(--k));width:calc(45px*var(--k));height:calc(40px*var(--k));border:0;background:none;padding:0;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;transition:transform .2s}
-.dk-prev{left:calc(12px*var(--k))}.dk-next{right:calc(12px*var(--k))}
-.dk-prev i,.dk-next i{position:absolute;inset:0;background:#d9d9d9;transition:background .25s}
-.dk-prev i{-webkit-mask:var(--prev-shape,url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-54%20-54%20108%20108'%3E%3Cg%20fill='%23000'%3E%3Ccircle%20cx='0'%20cy='-32'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='0'%20cy='32'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20r='30'/%3E%3C/g%3E%3C/svg%3E")) center/contain no-repeat;mask:var(--prev-shape,url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-54%20-54%20108%20108'%3E%3Cg%20fill='%23000'%3E%3Ccircle%20cx='0'%20cy='-32'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='0'%20cy='32'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20r='30'/%3E%3C/g%3E%3C/svg%3E")) center/contain no-repeat}
-.dk-next i{-webkit-mask:var(--next-shape,url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-54%20-54%20108%20108'%3E%3Cg%20fill='%23000'%3E%3Ccircle%20cx='0'%20cy='-32'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='0'%20cy='32'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20r='30'/%3E%3C/g%3E%3C/svg%3E")) center/contain no-repeat;mask:var(--next-shape,url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-54%20-54%20108%20108'%3E%3Cg%20fill='%23000'%3E%3Ccircle%20cx='0'%20cy='-32'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20cx='27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='0'%20cy='32'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='16'%20r='22'/%3E%3Ccircle%20cx='-27.7'%20cy='-16'%20r='22'/%3E%3Ccircle%20r='30'/%3E%3C/g%3E%3C/svg%3E")) center/contain no-repeat}
-.dk-prev:hover{transform:translateX(-3px)}.dk-next:hover{transform:translateX(3px)}
-.dk-prev:hover i,.dk-next:hover i{background:#c9c9c9}
-/* 위쪽 '한 글자 열기'·'단어 열기' 버튼은 숨김 — 단어 열기는 카드 안 버튼으로 옮김(자동 풀기만 남김) */
-#cwHintLetter,#cwHintWord{display:none!important}
-.dk-card.flipping{background:#fbfbfb!important}
-.dk-card.flipping > *{opacity:1!important;transition:none}
 
 /* 오른쪽을 보고 있을 때 마우스를 올리면 오른쪽 끝에서 살짝 안쪽으로 멈춤(왼쪽일 땐 기존처럼) */
 .sw:not(.on).hov.peek-r .knob{animation:none;transform:translateY(-50%) translateX(calc(var(--w)*.46)) rotate(140deg);transition:transform .35s cubic-bezier(.3,1.4,.5,1),background .6s}
 /* 그 상태에서 누르면 왼쪽으로 굴러가서 켜짐 + 로딩 바도 오른쪽에서 왼쪽으로 참 */
 .sw.on.flip .knob{transform:translateY(-50%) rotate(-160deg)}
 .sw.flip ~ .ld .bar b{margin-left:auto}
-/* 아래 화살표 도형: 이전/다음 단어를 맞혔으면 그 단어 색 */
-.dk-card.prev-solved .dk-prev i{background:var(--prev-fc)}
-.dk-card.next-solved .dk-next i{background:var(--next-fc)}
-.dk-card.prev-solved .dk-prev:hover i,.dk-card.next-solved .dk-next:hover i{filter:brightness(.94)}
-/* 버튼 칸 옆면 ↗ 도 카드의 ↗ 상자와 같은 선 화살표로 */
-.cube .face-a svg{width:22px;height:22px;fill:none;stroke:#000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
-/* 맞히면 빈 칸 대신 영문 단어를 글자로(그 단어 색을 조금 진하게 해서 잘 보이게) */
-.dk-en{display:none;margin-top:calc(6px*var(--k));font-size:calc(19px*var(--k)*var(--t));font-weight:400;letter-spacing:-.02em;line-height:1.2;
-  color:var(--fc)} /* 아이콘과 같은 색 그대로 */
-.dk-card.solved .dk-boxes{display:none}
-.dk-card.solved .dk-en{display:block}
+
 /* ↗ 는 그 단어를 맞힌 뒤에만 상세 페이지로 이동. 맞히기 전엔 눌러도 살짝 흔들리기만 */
 @keyframes goNope{0%,100%{transform:none}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
-/* 프로젝트 강조: 마우스를 올린 단어의 그림만 또렷하게(살짝 커짐), 나머지는 흑백 + 흐림 + 옅게 */
-.gray{transition:filter .45s ease,opacity .45s ease,transform .45s cubic-bezier(.22,1,.36,1)}
-.cw-stage.art-focus .gray:not(.focus){filter:grayscale(1) blur(2.5px);opacity:.35}
-.cw-stage.art-focus .gray.focus{transform:scale(1.04)}
-/* 그림뿐 아니라 십자말풀이도 같이 강조: 그 단어 칸만 색을 남기고, 나머지 칸·장식 상자는 흑백 + 옅게.
-   (도는 버튼 칸은 부모에 filter를 걸면 3D 정육면체가 납작해져서 각 면에 따로 걸어줌) */
-.cell{transition:opacity .5s,transform .5s,background .25s,color .25s,filter .45s}
-.deco-box,.cube .f{transition:filter .45s ease,opacity .45s ease}
-.cw-stage.art-focus .cell:not(.focus-w):not(.portal),
-.cw-stage.art-focus .cell.portal:not(.focus-w) .cube .f{filter:grayscale(1) opacity(.45) blur(1.2px)} /* 강조 안 된 칸도 흑백 + 약한 흐림 */
-.cw-stage.art-focus .deco-box{filter:grayscale(1);opacity:.35}
-/* 좌우 여백 = 위아래 여백: script.js fit()이 계산한 --sx만큼 양 끝 요소를 바깥으로(transform과 따로 노는 translate 속성 사용) */
-.deco-box.edge-l{translate:calc(var(--sx,0px)*-1) 0}
-.deco-box.edge-r,.cw-stage .deck,.cw-stage .cw-toolbar{translate:var(--sx,0px) 0}
-/* 히어로 → 십자말풀이 전환 때 빛 3개를 그리는 화면 고정 캔버스(script.js createDive). 칸 위로 보이도록 위에, 인트로(100)보다는 아래 */
+
+/* 히어로 → FIND 전환 때 빛 3개를 그리는 화면 고정 캔버스(script.js createDive). FIND 글 위로 보이도록 위에, 인트로(100)보다는 아래 */
 .dive-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50;opacity:0}
-/* 팡파레: 화면 양쪽 아래 모서리에서 터지는 종이 조각(script.js fanfare) */
-#fanfare{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
 .ff{position:absolute;will-change:transform,opacity}
 /* ===================== 한 화면 장면 구조 (script.js Scenes) =====================
-   페이지 스크롤 없이 세 장면(히어로 / 십자말풀이 / 기획 의도)을 같은 자리에 겹쳐 두고, 보이는 장면만 바꿈 */
+   페이지 스크롤 없이 세 장면(히어로 / FIND 형광펜 / REVEAL)을 같은 자리에 겹쳐 두고, 보이는 장면만 바꿈 */
 html,body{height:100%;overflow:hidden!important;overscroll-behavior:none}
-.hero-wrap,.cw,.end{position:fixed!important;inset:0;height:100vh!important;margin:0!important}
-.hero-wrap{z-index:1}.cw{z-index:2}.end{z-index:3}
+.hero-wrap,.find,.end{position:fixed!important;inset:0;height:100vh!important;margin:0!important}
+.hero-wrap{z-index:1}.find{z-index:2}.end{z-index:3}
 .scene-off{visibility:hidden;pointer-events:none}
 .home-hint{display:none!important} /* 점선 원 대신 캔버스에 빛과 같은 모양의 가는 선으로 제자리를 표시 */
 
@@ -568,85 +300,15 @@ body[data-scene] .sctl button:hover:not(:disabled){background:#ddd;color:#111}
 .h-cap small{display:block;font-size:11px;letter-spacing:.4em;color:#777;margin-bottom:1.4em}
 .h-cap.show{opacity:1;transform:translate(-50%,-50%)}
 
-/* 십자말풀이 첫 진입 안내 */
-.cw-cap{position:absolute;left:50%;bottom:74px;transform:translate(-50%,6px);z-index:12;pointer-events:none;text-align:center;color:#d8d8d8;
-  background:rgba(20,20,22,.82);padding:12px 22px;border-radius:14px;font-size:14px;line-height:1.6;letter-spacing:-.02em;opacity:0;transition:opacity .8s ease,transform .8s ease}
-.cw-cap small{display:block;font-size:10px;letter-spacing:.35em;color:#8a8a8a;margin-bottom:4px}
-.cw-cap.show{opacity:1;transform:translate(-50%,0)}
-
-/* 도는 칸 = 상세 페이지 입구 안내 말풍선 */
-.pt-tip{position:absolute;left:50%;bottom:calc(100% + 12px);transform:translate(-50%,6px);z-index:30;white-space:nowrap;pointer-events:none;
-  background:#111;color:#fff;font-size:15px;letter-spacing:-.01em;padding:8px 14px;border-radius:10px;opacity:0;transition:opacity .3s ease,transform .3s ease}
-.pt-tip::after{content:'';position:absolute;left:50%;top:100%;margin-left:-6px;border:6px solid transparent;border-top-color:#111}
-.pt-tip b{font-weight:400;margin-left:2px}
-.cell.portal:hover .pt-tip,.cell.portal.tipon .pt-tip,.pt-tip.show{opacity:1;transform:translate(-50%,0)}
-.pt-tip.show{animation:tipBob 1.2s ease-in-out infinite}
-@keyframes tipBob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-5px)}}
-/* 카드: 맞힌 단어에만 '도는 칸을 누르면 프로젝트' 안내 한 줄 */
-.dk-tip{display:none}
-.dk-card.solved .dk-body p.dk-tip{display:block;margin-top:calc(6px*var(--k));font-size:calc(11.5px*var(--k)*var(--t));color:#999;letter-spacing:-.03em}
-.dk-tip b{font-weight:500;color:var(--fc)}
-
-/* ===== 03 REVEAL: 기획 의도 ===== */
-.end-top{justify-content:flex-end;top:26px}
-.why{position:absolute;left:7vw;top:17vh;width:min(54vw,1040px);z-index:3;pointer-events:none}
-.why-k{font-size:12px;letter-spacing:.3em;color:#999;margin-bottom:3.2vh}
-.why-l{font-size:clamp(17px,1.55vw,30px);line-height:1.62;letter-spacing:-.03em;color:#555;word-break:keep-all;margin-top:.7em}
-.why-lead{font-size:clamp(24px,2.4vw,46px);line-height:1.35;color:#111;font-weight:500;margin-top:0;margin-bottom:.5em}
-.why-last{color:#111;font-weight:500;margin-top:1.4em}
-.why em{font-style:normal;font-weight:500}
-.why em.c0{color:#16a47d}.why em.c1{color:#e2476a}.why em.c2{color:#2a62c4}
-.why-map{position:absolute;right:7vw;top:17vh;width:min(24vw,420px);list-style:none;z-index:3;pointer-events:none;margin-top:calc(12px + 3.2vh)}
-.why-map li{padding:1.3em 0;border-top:1px solid #dcdcdc}
-.why-map li:last-child{border-bottom:1px solid #dcdcdc}
-.wm-k{display:inline-block;font-size:11px;letter-spacing:.3em;color:#999;margin-right:10px;vertical-align:middle}
-.why-map p{margin-top:.7em;font-size:clamp(13px,1vw,17px);line-height:1.6;color:#444;letter-spacing:-.02em;word-break:keep-all}
-.why-map p b{font-weight:600;color:#111}
-.wm-shapes,.wm-cells{display:inline-flex;gap:5px;vertical-align:middle}
 .sh{width:15px;height:15px;display:inline-block}
 .sh.s0{background:#7ADB8C;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10 -10 20 20'%3E%3Cpath d='M0-10Q3-3 10 0Q3 3 0 10Q-3 3-10 0Q-3-3 0-10Z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10 -10 20 20'%3E%3Cpath d='M0-10Q3-3 10 0Q3 3 0 10Q-3 3-10 0Q-3-3 0-10Z'/%3E%3C/svg%3E") center/contain no-repeat}
 .sh.s1{background:#EE6882;clip-path:polygon(56% 0,96% 30%,90% 80%,44% 100%,4% 70%,10% 20%)}
 .sh.s2{background:#4A7CC0;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='6' cy='6' r='5'/%3E%3Ccircle cx='14' cy='6' r='5'/%3E%3Ccircle cx='6' cy='14' r='5'/%3E%3Ccircle cx='14' cy='14' r='5'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='6' cy='6' r='5'/%3E%3Ccircle cx='14' cy='6' r='5'/%3E%3Ccircle cx='6' cy='14' r='5'/%3E%3Ccircle cx='14' cy='14' r='5'/%3E%3C/svg%3E") center/contain no-repeat}
-.wm-cells i{width:14px;height:14px;border:1px solid #111;background:#FFD1DC}
-.wm-cells i:nth-child(2){background:#FFF1A8}.wm-cells i:nth-child(3){background:#CBE3FF}
-.end-cta{bottom:9vh;left:7vw}
-.end-cta p{font-size:clamp(14px,1.1vw,18px);color:#333}
-.px-hint{background:transparent;font-size:11px;color:#aaa}
-/* 장면에 들어오면 글이 한 줄씩 떠오름 */
-.why-k,.why-l,.why-map li,.end-cta{opacity:0;transform:translateY(14px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
-.end.on .why-k,.end.on .why-l,.end.on .why-map li,.end.on .end-cta{opacity:1;transform:none}
-.end.on .why-l:nth-of-type(2){transition-delay:.25s}.end.on .why-l:nth-of-type(3){transition-delay:.9s}
-.end.on .why-l:nth-of-type(4){transition-delay:1.6s}.end.on .why-l:nth-of-type(5){transition-delay:2.4s}
-.end.on .why-map li:nth-child(1){transition-delay:3.1s}.end.on .why-map li:nth-child(2){transition-delay:3.5s}.end.on .why-map li:nth-child(3){transition-delay:3.9s}
-.end.on .end-cta{transition-delay:.6s}
-@media (prefers-reduced-motion:reduce){.why-k,.why-l,.why-map li,.end-cta{transition:none}}
+
 /* 히어로에선 아래 가운데 안내(hh)가 이미 설명하므로, 잠겨 있을 때 오른쪽 안내 문구는 숨김(겹침 방지) */
 body[data-scene="look"] .sctl-msg:not(.ok){display:none}
 /* 히어로 글자 자리도 빛 덩어리와 함께 화면 한가운데로 옮김(script.js size()가 --hx/--hy 계산) */
 .hero .tb{translate:var(--hx,0px) var(--hy,0px)}
-/* 03 REVEAL 숨은 그림: 드러난 칸은 톡 튀어나오듯 나타남 */
-.px.rv{transition:background-color .25s ease;animation:pxIn .45s cubic-bezier(.3,1.4,.5,1)}
-@keyframes pxIn{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
-.px-hint{transition:opacity .6s ease;display:flex;align-items:center;gap:8px;font-size:13px!important;letter-spacing:0!important;color:#222!important;
-  background:#fff!important;border:1px solid #e2e2e2;padding:9px 18px!important;box-shadow:0 2px 10px rgba(0,0,0,.05);border-radius:calc(10px*.85*min(100vw/1920px,100vh/1080px))} /* 모서리: 십자말풀이 버튼과 같은 값 */
-.px-hint.prog{font-variant-numeric:tabular-nums}
-.px-hint.hide{opacity:0}
-/* 안내 아이콘: 가로로 끄는 손가락 흔적 */
-.ph-drag{position:relative;width:26px;height:10px;flex:none}
-.ph-drag::before{content:'';position:absolute;left:0;top:4px;height:2px;width:100%;border-radius:2px;background:linear-gradient(90deg,#D970C4,#E86A8A,#EC9280);transform-origin:left;animation:phDrag 1.8s ease-in-out infinite}
-.ph-drag::after{content:'';position:absolute;top:1px;left:0;width:8px;height:8px;border-radius:50%;background:#222;animation:phDot 1.8s ease-in-out infinite}
-@keyframes phDrag{0%{transform:scaleX(0)}60%,100%{transform:scaleX(1)}}
-@keyframes phDot{0%{transform:translateX(0)}60%,100%{transform:translateX(18px)}}
-/* 들어올 때 한 번 칸을 문질러 보이는 커서 */
-.px-ghost{position:absolute;left:0;top:0;z-index:4;width:22px;height:22px;margin:-3px 0 0 -4px;pointer-events:none;opacity:0;transition:opacity .35s}
-.px-ghost.show{opacity:1}
-.px-ghost svg{width:100%;height:100%;fill:#111;stroke:#fff;stroke-width:1.4;stroke-linejoin:round;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2))}
-.eye-cap{background:rgba(255,255,255,.92);padding:9px 18px;border-radius:14px}
-.eye-cap small{display:block;margin-top:6px;font-size:12px;color:#999;text-align:center}
-.eye-cap{position:absolute;left:50%;bottom:calc(4vh + 22px);transform:translate(-50%,8px);z-index:3;pointer-events:none;white-space:nowrap;
-  font-size:clamp(14px,1.1vw,18px);letter-spacing:-.01em;color:#333;opacity:0;transition:opacity 1.2s ease,transform 1.2s ease}
-.eye-cap.show{opacity:1;transform:translate(-50%,0)}
-.end .px-tools{top:auto;bottom:calc(4vh + 60px);right:auto;left:50%;transform:translateX(-50%)}
 
 /* 인트로 눈: 내비게이션과 같은 피그마 눈(EyeKit). 트랙·속눈썹 막대로 만들던 예전 스위치 눈을 대체 */
 .sw.eyesw{height:auto;display:block}
@@ -685,64 +347,6 @@ body[data-scene] .sc-mouse{border-color:#777}body[data-scene] .sc-mouse i{backgr
 @keyframes scWheel{from{transform:translate3d(0,-10px,0)}to{transform:translate3d(0,24px,0)}}
 @media (prefers-reduced-motion:reduce){.sc-mouse i{animation:none}}
 .hero .hh.gone{opacity:0!important;animation:none!important;transition:opacity .6s}
-.px.rv{transition:background-color .5s linear} /* 숨 쉬는 빛이 계단처럼 끊기지 않고 부드럽게 이어지게 */
-.px-fx{position:absolute;inset:0;z-index:2;pointer-events:none} /* 눌러서 띄우는 도트 빛 */
-.end{cursor:pointer}
-
-/* ===== REVEAL 메일 폼(예전 'Say hello' 버튼 자리) ===== */
-.ct-form{position:absolute;left:7vw;bottom:9vh;z-index:4;width:min(420px,86vw);display:flex;flex-direction:column;gap:8px;cursor:auto;
-  padding:18px;border-radius:14px;background:rgba(245,245,245,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 0 0 1px rgba(0,0,0,.08)}
-.ct-title{font-size:11px;letter-spacing:.24em;color:#888;text-transform:uppercase;margin-bottom:2px}
-.ct-row{display:flex;gap:8px}
-.ct-form input,.ct-form textarea{flex:1;min-width:0;font:inherit;font-size:14px;color:#111;background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px 12px;outline:none;resize:none;transition:border-color .2s}
-.ct-form input:focus,.ct-form textarea:focus{border-color:#111}
-.ct-form .bad{border-color:#e5484d}
-.ct-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}
-.ct-msg{font-size:12px;color:#888}
-.ct-msg.ok{color:#1d8a5b}.ct-msg.err{color:#e5484d}
-.ct-form button{flex:none;font:inherit;font-size:14px;padding:10px 22px;border:0;border-radius:99px;background:#111;color:#fff;cursor:pointer;transition:opacity .2s}
-.ct-form button:disabled{opacity:.4;cursor:default}
-.ct-form.flash{animation:ctFlash .8s ease}
-@keyframes ctFlash{0%,100%{box-shadow:0 0 0 1px rgba(0,0,0,.08)}40%{box-shadow:0 0 0 3px rgba(17,17,17,.35)}}
-@media (max-width:700px){.ct-form{left:50%;transform:translateX(-50%);bottom:12vh}.ct-row{flex-direction:column}}
-/* REVEAL 배경 문장: 격자 선 아래에 겨우 보일 만큼 옅게, 화면을 가득 채우는 굵은 글자 */
-.rv-text{position:absolute;left:2.4vw;right:2vw;top:5vh;z-index:0;margin:0;pointer-events:none;user-select:none;
-  font-family:'A2z',sans-serif;font-weight:900;font-size:min(7.1vw,12.6vh);line-height:1.52;letter-spacing:-.01em;color:#252528;white-space:nowrap}
-.end .px-grid{z-index:1}
-.px-paint{position:absolute;inset:0;z-index:1;pointer-events:none} /* 드래그로 칠한 칸(배경 문장 위, 격자선 아래) */
-.end{touch-action:none}
-
-/* ===== REVEAL 연락처 표: 격자 칸 크기(--c)에 맞춘 칸들, 자화상을 다 칠하면 한 칸씩 튀어나옴 ===== */
-.end .eye-cap{display:none}
-.end footer{text-align:right;padding:0 3vw 2.4vh 0;letter-spacing:.2em}
-.ct-card{position:absolute;z-index:3;display:grid;grid-template-columns:repeat(3,var(--c)) repeat(6,var(--c));grid-auto-rows:var(--c);pointer-events:none;font-family:'Pretendard',-apple-system,sans-serif;color:#111}
-/* 깔끔한 표: 칸 테두리 대신 가로 선만, 배경은 격자를 덮는 바탕색 */
-.ct-card>*{display:flex;align-items:center;background:#f5f5f5;text-decoration:none;color:inherit;border-bottom:1px solid #dcdcdc;
-  opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .6s cubic-bezier(.2,.8,.2,1),color .2s;transition-delay:calc(var(--i)*.09s)}
-.ct-card.show{pointer-events:auto}
-.ct-card.show>*{opacity:1;transform:none}
-.ct-t{grid-column:1/-1;grid-row:span 2;align-items:flex-end;padding-bottom:calc(var(--c)*.22);border-bottom:1.5px solid #111!important;
-  font-family:'A2z',sans-serif;font-weight:900;font-style:italic;font-size:calc(var(--c)*1.02);letter-spacing:-.03em;line-height:1}
-.ct-k{grid-column:span 3;font-size:clamp(10px,calc(var(--c)*.23),12px);letter-spacing:.16em;text-transform:uppercase;color:#9a9a9a}
-.ct-v{grid-column:span 6;justify-content:flex-end;white-space:nowrap;font-size:clamp(12px,calc(var(--c)*.31),16px)}
-a.ct-v:hover{color:#E0587A}
-.ct-go{grid-column:1/-1;justify-content:space-between;border-bottom:1.5px solid #111!important;font-size:clamp(12px,calc(var(--c)*.31),16px);font-weight:600;cursor:pointer}
-.ct-go i{font-style:normal;transition:transform .25s}
-.ct-go:hover{color:#E0587A}
-.ct-go:hover i{transform:translate(3px,-3px)}
-
-/* 그림 지우기: 오른쪽 위 */
-.end .px-tools{top:calc(3vh + 8px);right:3vw;bottom:auto;left:auto;transform:none;z-index:5}
-.end .px-tools button{font-family:'Pretendard',-apple-system,sans-serif;font-size:13px;padding:8px 16px;background:rgba(255,255,255,.9)}
-.end .px-tools button:hover{background:#111;color:#fff}
-
-/* 칠한 칸이 격자선 위를 덮도록: 격자(1) < 칠하기(2) < 빛 터짐(3) */
-.end .px-paint{z-index:2}
-.end .px-fx{z-index:3}
-.end .px-hint,.end .px-tools,.end .px-ghost{z-index:6}
-
-/* 안내 알약: 그림자 없이 */
-.end .px-hint{box-shadow:none!important}
 
 /* ===== 01 LOOK 글자 (피그마 161:309): 초록 별 = 소개 문장 · 핑크 육각형 = Skills · 파랑 네잎 = 이름
    --u = 1920 기준 1px. 글자 상자의 가운데가 빛의 가운데가 되므로 상자를 가운데 기준(translate -50%)으로 놓음 ===== */
@@ -760,7 +364,7 @@ a.ct-v:hover{color:#E0587A}
 .hero .hs-name h1 .en{font-size:calc(var(--u)*34);font-weight:400;margin:0;padding-bottom:.18em}
 .hero .hs-name h2{margin:calc(var(--u)*-20) 0 0;font-size:calc(var(--u)*20);font-weight:400;letter-spacing:-.04em;white-space:nowrap}
 .hero .hs-name ul.kw{display:grid;grid-template-rows:auto auto;grid-auto-flow:column;column-gap:calc(var(--u)*20);row-gap:calc(var(--u)*8);
-  font-size:calc(var(--u)*16);line-height:1.3;letter-spacing:-.04em;text-align:left;margin:0}
+  font-size:clamp(11px,calc(var(--u)*16),12px);line-height:1.3;letter-spacing:-.04em;text-align:left;margin:0}
 .hero .hs-name ul.kw li::before{content:'✦';margin-right:.3em}
 /* Skills */
 .hero .hs-skills{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*20)}
@@ -784,92 +388,92 @@ a.ct-v:hover{color:#E0587A}
 
 /* 로딩 바 글리치 도트(glitch.js) */
 #intro .gl-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
-/* 십자말풀이 카드: 위 버튼 줄에 조금 더 가깝게 */
-.cw-stage .deck{top:122px} /* 위 버튼 줄과 사이를 더 띄움 */
-/* 그림 지우기 버튼 모서리: 십자말풀이 버튼과 같은 둥글기(피그마 10px × 십자말풀이 배율) */
-.end .px-tools button{border-radius:calc(10px * .85 * min(100vw / 1920px, 100vh / 1080px) + 0px)}
 
 /* 빛 퍼즐 중: 글자는 자기 짝 빛의 원형 마스크 안에서만 검정으로 보임(script.js lightMask) */
 .hero .tb.lit{mix-blend-mode:normal;color:#0a0a0a;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
 /* Skills 글자를 위로 올린 만큼(44) 상자 위아래에 같은 여백을 줘서, 올라간 제목도 상자 안에 들어오게(빛 퍼즐 중 마스크에 잘리지 않음). 위아래가 같아 빛 중심은 그대로 */
 .hero .tb-b{padding:calc(var(--u)*44) 0}
 
-/* REVEAL '그림 한 번에 완성하기' — 십자말풀이 '자동으로 풀기' 버튼과 같은 모양·색 */
-.end .px-tools #pxAuto{background:#A0FFB2;border:0;color:#111;font-weight:600;border-radius:calc(10px*.85*min(100vw/1920px,100vh/1080px))}
-.end .px-tools #pxAuto:hover{background:#80F797;color:#111}
-.end.revealed{cursor:default}
-
-/* 십자말풀이 ↔ REVEAL 도트 전환 캔버스(script.js dotWipe) */
-.dot-wipe{position:fixed;inset:0;width:100vw;height:100vh;z-index:85;pointer-events:none;display:none}
-
-/* 단서 카드 다크 버전: 카드만 밝아 시선을 뺏지 않도록 배경(#212124)보다 한두 톤 밝은 어두운 카드로 */
-.dk-card{background:#2c2c30;box-shadow:0 0 0 1px rgba(255,255,255,.05)}
-.dk-card[data-pos="1"]{background:#28282c}
-.dk-card[data-pos="2"]{background:#252528}
-.dk-card.flipping{background:#2c2c30!important}
-.dk-ic{background:#4a4a50}
-.dk-no{color:#9a9a9f}
-.dk-body h5{color:#e4e4e6}
-.dk-boxes span{border-color:#5a5a60;color:#ddd}
-.dk-body p{color:#98989d}
-.dk-open{background:rgba(207,240,231,.14);color:#CFF0E7}
-.dk-open:hover{background:rgba(207,240,231,.24)}
-.dk-card.solved .dk-open{background:rgba(255,255,255,.07);color:#aaa}
-.dk-card.solved .dk-open:hover{background:rgba(255,255,255,.12);color:#eee}
-.dk-card svg{stroke:#d8d8d8}
-.dk-prev i,.dk-next i{background:#45454b}
-.dk-prev:hover i,.dk-next:hover i{background:#56565c}
-.dk-card.solved .dk-body p.dk-tip{color:#77777c}
-
-/* 단어를 옮겨 고를 때 칸 바탕이 깜빡이지 않게(script.js show()가 잠깐 붙임) */
-.grid.snap .cell{transition:none!important}
-
-/* 십자말풀이 뒤 배경 그림: 빛이 칸에 닿기 전엔 안 보이고(script.js reveal()이 .bg-in을 붙임), 칸이 켜질 때 함께 서서히 나타남 */
-.cw-stage:not(.bg-in) .gray{opacity:0!important;pointer-events:none}
-.cw-stage.bg-in .gray{animation:grayIn 1.6s ease}
-@keyframes grayIn{from{opacity:0}}
-/* 단서 카드·자동 풀기 버튼도 배경 그림과 같이: 빛이 칸에 닿기 전엔 숨김 → 칸이 켜질 때 함께 서서히 */
-.cw-stage:not(.bg-in) .deck,.cw-stage:not(.bg-in) .cw-toolbar{opacity:0!important;pointer-events:none}
-.cw-stage.bg-in .deck,.cw-stage.bg-in .cw-toolbar{animation:grayIn 1.6s ease}
+/* ===================== 02 FIND: 형광펜 (find.js) =====================
+   옅게 깔린 문장 위에 프로젝트 이름만 형광펜으로 칠해짐. 크기·여백은 아래 변수로 조절 */
+.find{--fx:7vw;--fy:12vh;overflow:hidden;opacity:0;color:#3b3b40;font-family:'A2z',-apple-system,sans-serif}
+.find-text{position:absolute;left:var(--fx);right:var(--fx);top:var(--fy);bottom:var(--fy);margin:0;overflow:hidden;
+  font-size:clamp(18px,min(1.9vw,3.4vh),38px);font-weight:400;line-height:1.85;letter-spacing:-.02em;word-break:break-all;
+  -webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)} /* 아래쪽은 글이 끊기지 않고 흐려지며 사라짐 */
+/* 형광펜: 칠하기 전엔 배경 글과 똑같이 보이다가(숨어 있음) .on이 붙으면 왼쪽부터 칠해짐. 줄이 넘어가도 이어서 칠해짐 */
+.hl{color:inherit;text-decoration:none;word-break:keep-all;border-radius:2px;padding:.02em .2em;margin:0 -.08em;
+  background-image:linear-gradient(var(--hc),var(--hc));background-repeat:no-repeat;background-position:0 58%;background-size:0% 82%;
+  transition:background-size .65s cubic-bezier(.65,.05,.3,1),color .3s ease .22s,opacity .3s ease;outline:none}
+.hl.on,.hl.lit{background-size:100% 82%;color:#141416}
+.hl.painting:not(.on){transition:color .25s ease!important} /* 빛이 직접 칠하는 동안(전환 중): 폭은 빛을 따라가고 글자색만 부드럽게 */
+a.hl.on{cursor:pointer}
+a.hl.on:focus-visible{box-shadow:0 0 0 2px #f2f2f2}
+.find-text.hov .hl.on:not(.cur){opacity:.35} /* 하나에 마우스를 올리면 나머지 형광펜은 한 톤 죽음 */
+a.hl.cur{background-size:100% 100%}
+.hl-deco.on{color:#2a2a2e}
+/* 미리보기 카드(커서를 따라옴, 위치는 find.js가 transform으로) */
+.find-peek{position:fixed;left:0;top:0;z-index:60;width:min(300px,70vw);padding:10px 10px 14px;border-radius:12px;background:#2c2c30;
+  box-shadow:0 12px 40px rgba(0,0,0,.35);pointer-events:none;opacity:0;scale:.94;transform-origin:0 0;transition:opacity .25s ease,scale .25s ease}
+.find-peek.show{opacity:1;scale:1}
+.fp-img{aspect-ratio:16/10;border-radius:8px;overflow:hidden;background:#38383d}
+.fp-img img{width:100%;height:100%;object-fit:cover;display:block}
+.find-peek.no-img .fp-img{display:none}
+.fp-t{margin:10px 4px 0;font-size:15px;color:#f2f2f2;letter-spacing:-.02em}
+.fp-g{margin:4px 4px 0;font-size:12px;color:#8a8a8f}
+/* 처음 들어왔을 때 잠깐 보이는 안내 */
+.find-cap{position:absolute;left:50%;bottom:74px;transform:translate(-50%,6px);z-index:12;pointer-events:none;text-align:center;color:#d8d8d8;
+  background:rgba(20,20,22,.82);padding:12px 22px;border-radius:14px;font-size:12px;line-height:1.6;letter-spacing:-.02em;opacity:0;transition:opacity .8s ease,transform .8s ease}
+.find-cap small{display:block;font-size:10px;letter-spacing:.35em;color:#8a8a8a;margin-bottom:4px}
+.find-cap.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.hl{transition:none}.find-peek{transition:none}}
 
 
-
-/* ===== REVEAL 편지 모양 연락 폼: 격자 칸(--c) 단위 14×15. 자화상과 같은 밝은 색(#F5F5F5) 칸으로, 그림이 완성되면 칸이 대각선으로 톡톡 나타남 ===== */
-.ct-letter{position:absolute;z-index:5;display:grid;grid-template-columns:repeat(14,var(--c));grid-template-rows:repeat(15,var(--c));
-  font-family:'Pretendard',-apple-system,sans-serif;color:#111;pointer-events:none;cursor:auto}
-.ct-letter .lt-f{--bg:#F5F5F5;display:block;background:var(--bg);box-shadow:0 0 0 .6px var(--bg);opacity:0;transform:scale(.6);transition:opacity .35s ease var(--d),transform .45s cubic-bezier(.3,1.5,.5,1) var(--d)}
-.ct-letter .lt-in{--bg:#dcdcdc}
-.ct-letter .lt-field{position:relative;z-index:1;display:flex;flex-direction:column;padding:calc(var(--c)*.1) calc(var(--c)*.14);opacity:0;transition:opacity .4s ease var(--d);cursor:text}
-.ct-letter .lt-field span{font-size:clamp(10px,calc(var(--c)*.24),13px);color:#555;line-height:1;pointer-events:none}
-.ct-letter input,.ct-letter textarea{flex:1;min-height:0;width:100%;border:0;outline:0;background:transparent;resize:none;padding:0;margin-top:calc(var(--c)*.04);
-  font:inherit;font-size:clamp(12px,calc(var(--c)*.3),16px);color:#111;line-height:1.35}
-.ct-letter textarea{width:calc(100% - var(--c)*.1)}
-.ct-letter.lt-ready .lt-field:focus-within span{color:#E0587A;transition-delay:0s}
-.ct-letter .lt-field.bad span,.ct-letter.lt-ready .lt-field.bad span{color:#e5484d;transition-delay:0s}
-.ct-letter .lt-send{position:relative;z-index:1;border:0;background:#F5F5F5;color:#111;font:inherit;font-weight:600;font-size:clamp(12px,calc(var(--c)*.3),16px);cursor:pointer;
-  opacity:0;transform:scale(.6);transition:opacity .35s ease var(--d),transform .45s cubic-bezier(.3,1.5,.5,1) var(--d),background .2s,color .2s}
-.ct-letter .lt-send:hover{background:#FFD1DC}
-.ct-letter .lt-send:disabled{opacity:.5!important;cursor:default}
-.ct-letter .lt-msg{align-self:center;justify-self:center;margin:0;font-size:12px;color:#aaa;pointer-events:none;white-space:nowrap}
-.ct-letter .lt-tip{align-self:start;margin:calc(var(--c)*.12) 0 0 calc(var(--c)*.04);font-size:clamp(11px,calc(var(--c)*.26),13px);color:#FF8FA3;pointer-events:none;white-space:nowrap}
-.ct-letter .lt-msg.ok{color:#9CFFB1}.ct-letter .lt-msg.err{color:#FF8FA3}
-/* 칠하며 지나간 칸(.on)은 그 자리에서 바로 드러남 */
-.ct-letter .lt-f.on,.ct-letter .lt-send.on{opacity:1;transform:none;transition-delay:0s}
-.ct-letter .lt-field.on{opacity:1;transition-delay:.1s}
-/* B 장면 칸은 흔들릴 때(.wob)만 보임. 흔들릴 땐 A 테두리를 숨김(입력 칸·버튼은 제자리) */
-.ct-letter .lt-b{visibility:hidden}
-.ct-letter.wob .lt-a{visibility:hidden}
-.ct-letter.wob .lt-b{visibility:inherit} /* visible로 두면 장면이 숨겨져도(부모 visibility:hidden) 이 칸만 다른 장면 위에 남아 보였음 → 부모를 따르게 */
-/* 이름표·안내 글씨·보내기 글씨는 그림이 다 나타나기 전(칠하며 칸만 드러날 때)엔 숨김 */
-.ct-letter .lt-field span,.ct-letter .lt-send{color:transparent}
-.ct-letter input::placeholder{color:transparent}
-/* 이름표와 연락처 예시 글자(010-0000-0000)는 같은 순간(.lt-ready)에 함께 나타남 */
-.ct-letter.lt-ready .lt-field span{color:#555}
-.ct-letter.lt-ready input::placeholder{color:#999}
-.end.revealed .ct-letter .lt-send{color:#111}
-/* 그림 완성 후(.revealed) 조금 뒤에 나타남 */
-.end.revealed .ct-letter{pointer-events:auto}
-.end.revealed .ct-letter .lt-f,.end.revealed .ct-letter .lt-send{opacity:1;transform:none;transition-delay:calc(var(--d) + 1.6s)}
-.end.revealed .ct-letter .lt-field{opacity:1;transition-delay:calc(var(--d) + 1.8s)}
-.end.revealed .ct-letter .lt-send:hover{transition-delay:0s}
-@media (prefers-reduced-motion:reduce){.ct-letter *{transition:none!important}}
+/* ===================== 03 REVEAL: 종이접기 (paper.js) =====================
+   종이 위치·크기는 아래 .pf-lime / .pf-pink / .pf-blue에서, 뒷면 글 폭은 각 .pf-back 너비로 조절 */
+.end{overflow:hidden;color:#e9e9e9;font-family:'A2z',-apple-system,sans-serif;background:transparent}
+.pf-head{position:absolute;left:3.6vw;top:5.5vh;z-index:2;pointer-events:none}
+.pf-title{position:relative;margin:0;font-size:clamp(36px,4.3vw,84px);font-weight:300;letter-spacing:-.02em;line-height:1;color:#ececec;white-space:nowrap}
+/* 제목 뒤 붓질: 형광펜 장면에서 이어지는 선. 장면에 들어오면 그려짐 */
+.pf-brush{position:absolute;left:-1%;top:-38%;width:104%;height:180%;overflow:visible}
+.pf-stroke{fill:none;stroke-width:26;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:.95}
+.end.pf-on .pf-stroke{animation:pfDraw .9s cubic-bezier(.6,.05,.3,1) .35s forwards}
+.end.pf-on .pf-stroke.s2{animation-delay:.85s}
+@keyframes pfDraw{to{stroke-dashoffset:0}}
+.pf-cols{position:absolute;left:56vw;top:4.5vh;width:min(22vw,420px);display:grid;grid-template-columns:1fr 1fr;gap:1.4vw;z-index:2;pointer-events:none;
+  opacity:0;transform:translateY(8px);transition:opacity .8s ease .5s,transform .8s ease .5s}
+.pf-cols p{margin:0;font-size:clamp(10px,.62vw,12px);line-height:1.6;color:#9a9a9f;word-break:keep-all}
+.end.pf-on .pf-cols{opacity:1;transform:none}
+/* 종이 한 장: 색 밑판(.pf-under: 색 + 글) 위에 배경과 같은 색의 종이가 덮여 있음. 바깥쪽 두 변은 밑판 색이 띠처럼 보이고,
+   모서리를 접으면 접힌 자리 밑으로 색 밑판과 글이 드러남. 접힌 날개(종이 뒷면)는 배경보다 어둡게 */
+.pf{position:absolute;z-index:3;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;outline:none;opacity:0;transition:opacity .6s ease}
+.pf.in{opacity:1}
+.pf:active{cursor:grabbing}
+.pf:focus-visible{outline:2px solid #f2f2f2;outline-offset:4px}
+.pf-under{position:absolute;inset:0;background:var(--pc);overflow:hidden}
+.pf-svg{position:absolute;left:0;top:0;overflow:visible;display:block;pointer-events:none}
+.pf-face{fill:#212124} /* = 배경색 */
+.pf-flap{fill:#18181a} /* 종이 뒷면: 배경보다 어둡게 */
+.pf-back{position:absolute;max-width:80%;color:#141416;word-break:keep-all;pointer-events:auto}
+.pf-back.at-br{right:var(--pad);bottom:var(--pad);text-align:right;transform-origin:100% 100%}
+.pf-back.at-bl{left:var(--pad);bottom:var(--pad);text-align:left;transform-origin:0 100%}
+.pf-back.at-tr{right:var(--pad);top:var(--pad);text-align:right;transform-origin:100% 0}
+.pf-back.at-tl{left:var(--pad);top:var(--pad);text-align:left;transform-origin:0 0}
+.pf-back p{margin:.5em 0 0;font-size:clamp(11px,.75vw,14px);line-height:1.55}
+.pf-k{display:block;font-size:clamp(11px,.7vw,13px);font-weight:700;letter-spacing:.18em}
+.pf-big{font-size:clamp(22px,2.2vw,42px)!important;line-height:1.05!important;font-weight:400;letter-spacing:-.02em}
+.pf-mail{display:inline-block;margin-top:.6em;font-size:clamp(12px,.85vw,16px);color:inherit;text-decoration:underline;text-underline-offset:3px}
+.pf-back dl{margin:.6em 0 0;font-size:clamp(11px,.78vw,15px);line-height:1.45}
+.pf-back dt{margin-top:.5em}
+.pf-back dd{margin:0;opacity:.65}
+.pf-lime{left:3.6vw;top:24vh;width:21vw;height:70vh}
+.pf-lime .pf-back{max-width:min(15vw,290px)}
+.pf-pink{right:3.6vw;top:3vh;width:19vw;height:27vh}
+.pf-pink .pf-back{max-width:min(14vw,270px)}
+.pf-blue{right:3.6vw;bottom:5vh;width:38vw;height:46vh}
+.pf-blue .pf-back{max-width:min(26vw,500px)}
+/* 안내 · 저작권 */
+.pf-hint{position:absolute;left:50%;bottom:calc(4vh + 26px);transform:translate(-50%,6px);margin:0;z-index:4;pointer-events:none;font-size:12px;color:#d8d8d8;
+  background:rgba(20,20,22,.82);padding:10px 18px;border-radius:14px;opacity:0;transition:opacity .8s ease,transform .8s ease;white-space:nowrap}
+.pf-hint.show{opacity:1;transform:translate(-50%,0)}
+.pf-foot{position:absolute;left:50%;bottom:2.4vh;transform:translateX(-50%);z-index:2;font-size:11px;letter-spacing:.2em;color:#5d5d62;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.pf-stroke{stroke-dashoffset:0}.end.pf-on .pf-stroke{animation:none}.pf,.pf-cols{transition:none}}
