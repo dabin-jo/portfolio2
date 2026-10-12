@@ -77,6 +77,7 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
       el.style.transform=`scale(${DS})`+(el.dataset.center?' translateX(-50%)':'');
     });
     heroOff={x:0,y:0};hero.style.setProperty('--hx','0px');hero.style.setProperty('--hy','0px');
+    hero.style.setProperty('--ds',DS.toFixed(4)); // 글자 최소 10px 보정용(CSS .tb.hd font-size)
     SNAPR=texts.map(el=>{
       const tr=el.getBoundingClientRect();
       return Math.min(100,Math.max(40,Math.hypot(tr.width,tr.height)/2*.85));
@@ -825,15 +826,15 @@ window.EyeKit=(()=>{
   }
   return {make,POS:{left:[16.33,MID],center:[CX,MID],down:[CX,24.13],right:[47.74,MID]}};
 })();
-/* ===== 인트로 (피그마 2032:312): 로딩 바가 쭉 채워짐 → 그 선이 눈처럼 위아래로 벌어지며 틈으로 첫 화면이 보임 → 눈이 화면 밖까지 커지며 전환 =====
+/* ===== 인트로 (피그마 2032:312): 로딩 바가 쭉 채워짐 → 그 선이 눈처럼 위아래로 벌어지며 틈으로 첫 화면이 보임 → 눈꺼풀이 화면 밖으로 물러나며 밝은 판이 사라지고 전환 =====
    눈 모양 = 선의 양 끝을 꼭짓점으로 하는 렌즈(위아래 곡선). 피그마 비율: 가로 1800 : 세로 942 */
 (()=>{
   const intro=document.getElementById('intro'),pct=document.getElementById('pct'),bar=document.getElementById('bar');
   const svg=document.getElementById('ld2Eye'),cover=svg.querySelector('.ld2-cover'),rim=svg.querySelector('.ld2-rim');
   scrollTo({top:0,left:0,behavior:'instant'});
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const LOAD_MS=2600,HOLD_MS=250,OPEN_MS=950,GROW_MS=1100,EYE_RATIO=942/1800,GROW_TO=3.6;
-  const eio=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,ein=t=>t*t*t;
+  const LOAD_MS=2400,HOLD_MS=250,OPEN_MS=950,GROW_MS=1300,EYE_RATIO=942/1800;
+  const eio=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
   const anim=(ms,fn,e)=>new Promise(r=>{const t0=performance.now();(function f(now){const t=Math.min(1,(now-t0)/ms);fn(e?e(t):t);t<1?requestAnimationFrame(f):r();})(t0);});
   let heroStarted=false;
   // 첫 화면 시작: 주제 한 줄('시선')을 먼저 보여준 뒤 → 스포트라이트가 하나씩 켜짐. 위쪽 내비게이션도 이때 나타남
@@ -856,14 +857,20 @@ window.EyeKit=(()=>{
     drawEye(cx,cy,hw,0);intro.classList.add('eye-open');
     await anim(OPEN_MS,k=>drawEye(cx,cy,hw,HH*k),eio);          // 선이 눈처럼 벌어짐
     startHero();
-    await anim(GROW_MS,k=>{const S=1+(GROW_TO-1)*k;drawEye(cx,cy,hw*S,HH*S);rim.style.opacity=String(1-k);},ein); // 눈이 화면 밖까지 커짐
+    /* 눈꺼풀이 계속 열리듯: 위·아래 곡선은 화면 밖으로 물러나고 양 끝도 화면 밖으로 벌어지면서, 밝은 판이 서서히 투명해짐
+       (눈 모양을 통째로 확대하던 방식은 뾰족한 끝이 커지며 화면을 덮어 어색했음) */
+    const W=innerWidth,H=innerHeight,hw2=Math.max(hw,W*.62),HH2=Math.max(HH,H*.9);
+    await anim(GROW_MS,k=>{
+      drawEye(cx,cy,hw+(hw2-hw)*k,HH+(HH2-HH)*k);
+      const f=Math.max(0,(k-.35)/.65);svg.style.opacity=String(1-f*f);rim.style.opacity=String(1-k);
+    },eio);
     intro.classList.add('done');
   }
   /* 들어오면 자동으로 로딩이 진행됨 */
   function start(){
     const t0=performance.now();
     (function step(now){
-      const p=Math.min(1,(now-t0)/LOAD_MS),e=1-Math.pow(1-p,2),n=Math.round(e*100);
+      const p=Math.min(1,(now-t0)/LOAD_MS),e=Math.pow(p,2.2),n=Math.round(e*100); // 처음엔 천천히 → 중간부터 빨라짐
       pct.textContent=n+'%';bar.style.width=n+'%';
       if(p<1)return requestAnimationFrame(step);
       setTimeout(openEye,HOLD_MS);

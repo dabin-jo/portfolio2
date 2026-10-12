@@ -86,8 +86,14 @@ const Paper=(()=>{
     if(f){
       const ux=R?-1:1,uy=B?-1:1;
       const a=Math.abs(dot({x:f.M.x-S.C.x,y:f.M.y-S.C.y},f.n)/(f.n.x*ux||1e-6)),b=Math.abs(dot({x:f.M.x-S.C.x,y:f.M.y-S.C.y},f.n)/(f.n.y*uy||1e-6));
-      const pad=T+Math.min(w,h)*.04,wb=S.back.offsetWidth,hb=S.back.offsetHeight;
-      const sc=Math.max(.6,Math.min(1,(1-pad*(1/a+1/b))/(wb/a+hb/b)));
+      const pad=T+Math.min(w,h)*.04;
+      // 줄인 뒤에도 글자가 10px 밑으로 안 내려가게(CSS가 --sc로 글자를 키워 줌) → 글 상자 크기가 바뀌므로 두 번 맞춰 봄
+      let sc=1;S.back.style.setProperty('--sc','1');
+      for(let it=0;it<2;it++){
+        const wb=S.back.offsetWidth,hb=S.back.offsetHeight;
+        sc=Math.max(.6,Math.min(1,(1-pad*(1/a+1/b))/(wb/a+hb/b)));
+        S.back.style.setProperty('--sc',sc.toFixed(3));
+      }
       S.back.style.scale=sc.toFixed(3);
     }
   }
@@ -190,7 +196,7 @@ const Paper=(()=>{
   const timers=[];
   function enter(){
     reset();sec.classList.add('pf-on');
-    sheets.forEach((S,i)=>timers.push(setTimeout(()=>{S.el.classList.add('in');setState(S,'rest');},380+i*200)));
+    sheets.forEach((S,i)=>timers.push(setTimeout(()=>{S.el.classList.add('in');setState(S,S.el.dataset.start==='open'?'open':'rest');},380+i*200)));
     hintT=setTimeout(()=>{
       if(interacted)return;hint&&hint.classList.add('show');
       const S=sheets[0];if(!S||S.state!=='rest')return;

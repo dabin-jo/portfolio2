@@ -26,7 +26,7 @@ body{background:transparent;color:#000;font-family:'A2z',-apple-system,sans-seri
 /* 테두리는 칸마다 따로(칸이 나타날 때 선도 같이 나타나게 — 묶음 전체에 두면 로딩 중 위아래 선이 먼저 그려져 보였음).
    옆 칸과 1px 겹쳐 놓아서 칸 사이 선은 한 줄로 보임 */
 .pd-word .b + .b{margin-left:-1px}
-.pd-word .b sup{position:absolute;left:2px;top:1px;font-size:max(6px,calc(var(--u)*6));line-height:1}
+.pd-word .b sup{position:absolute;left:2px;top:1px;font-size:max(10px,calc(var(--u)*6));line-height:1}
 /* 피그마 261:877 기준, 글자만 한 단계 키움 — 제목(A2Z Medium 28) / 20 아래 기간(Regular 16, #878787) / 12 아래 기여도(Light 16, 항목 사이 8) */
 .pd-title{font-size:max(20px,calc(var(--u)*28));font-weight:500;letter-spacing:-.06em;line-height:1;white-space:nowrap}
 .pd-meta{display:flex;flex-direction:column;align-items:flex-start;gap:max(8px,calc(var(--u)*12));margin-top:max(12px,calc(var(--u)*20));
@@ -47,7 +47,7 @@ body{background:transparent;color:#000;font-family:'A2z',-apple-system,sans-seri
 .pd-tools li{width:calc(var(--u)*63);height:calc(var(--u)*63);min-width:44px;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:calc(var(--u)*6.3);color:#9a9a9a;transition:color .25s}
 .pd-tools img{display:block;height:max(calc(var(--h)*.7px),calc(var(--u)*var(--h)));width:auto;filter:brightness(0) invert(.6);transition:filter .25s}
 .pd-tools li:hover{color:#111}.pd-tools li:hover img{filter:none}
-.pd-tools span{font-size:max(9px,calc(var(--u)*10));line-height:1.3;letter-spacing:-.04em;white-space:nowrap}
+.pd-tools span{font-size:max(10px,calc(var(--u)*10));line-height:1.3;letter-spacing:-.04em;white-space:nowrap}
 
 /* 오른쪽 위 버튼(피그마 261:877): Pretendard Medium 16, 여백 12·32, 모서리 10. 링크 없으면 회색 */
 .pd-btn{flex:none;display:inline-flex;align-items:center;justify-content:center;
@@ -82,7 +82,7 @@ body{background:transparent;color:#000;font-family:'A2z',-apple-system,sans-seri
 }
 /* 왼쪽 위 뒤로가기 버튼: 화면에 고정. 마우스를 올리면 화살표가 왼쪽으로 살짝 */
 .pd-back{position:fixed;left:20px;top:18px;z-index:10;height:34px;padding:0 14px 0 10px;border-radius:calc(10px*.85*min(100vw/1920px,100vh/1080px));/* 모서리: 십자말풀이 버튼과 같은 값 */display:flex;align-items:center;gap:4px;
-  background:rgba(245,245,245,.85);box-shadow:0 0 0 1px rgba(0,0,0,.12);color:#111;text-decoration:none;font-size:11px;letter-spacing:.14em;transition:background .25s,color .25s}
+  background:rgba(245,245,245,.85);box-shadow:0 0 0 1px rgba(0,0,0,.12);color:#111;text-decoration:none;font-size:clamp(10px,0.69vw,14.3px);letter-spacing:.14em;transition:background .25s,color .25s}
 .pd-back svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s}
 .pd-back:hover{background:#111;color:#fff}
 .pd-back:hover svg{transform:translateX(-3px)}
@@ -121,7 +121,7 @@ html{background:#f5f5f5} /* 바탕은 html에(body는 투명) — body에 두면
 .pd-slides .ph,.pd-slides img{display:block;flex:none;width:100%;aspect-ratio:1760/990;background:#d9d9d9;object-fit:cover;
   transition:width .85s cubic-bezier(.22,1,.36,1),border-radius .85s,box-shadow .85s}
 /* 윗변 위의 작은 안내: 화살표가 위로 살짝살짝 움직임 */
-.pd-peek{position:absolute;left:50%;top:-36px;transform:translateX(-50%);font-size:12px;letter-spacing:.04em;color:#888;white-space:nowrap;
+.pd-peek{position:absolute;left:50%;top:-36px;transform:translateX(-50%);font-size:clamp(10.2px,0.75vw,15.6px);letter-spacing:.04em;color:#888;white-space:nowrap;
   transition:opacity .4s;opacity:0;animation:fadeIn .6s ease 1.4s forwards}
 .pd-peek i{display:inline-block;font-style:normal;margin-right:4px;animation:peekUp 1.6s ease-in-out infinite}
 @keyframes peekUp{0%,100%{transform:translateY(2px)}50%{transform:translateY(-3px)}}
@@ -134,7 +134,7 @@ html{background:#f5f5f5} /* 바탕은 html에(body는 투명) — body에 두면
 .pd-dim{position:fixed;inset:0;z-index:5;background:rgba(245,245,245,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .6s ease}
 body.sheet-open .pd-dim{opacity:1;pointer-events:auto}
 /* 크게 본 상태의 아래쪽 안내 */
-.pd-media::after{content:'위로 스크롤하거나 Esc를 누르면 닫혀요';position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:11px;color:#888;letter-spacing:.02em;padding:4px 12px;border-radius:99px;background:rgba(245,245,245,.9);opacity:0;pointer-events:none;transition:opacity .4s .5s;white-space:nowrap}
+.pd-media::after{content:'위로 스크롤하거나 Esc를 누르면 닫혀요';position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:clamp(10px,0.69vw,14.3px);color:#888;letter-spacing:.02em;padding:4px 12px;border-radius:99px;background:rgba(245,245,245,.9);opacity:0;pointer-events:none;transition:opacity .4s .5s;white-space:nowrap}
 .pd-media.open::after{opacity:1}
 @media (max-width:700px){.pd-media{left:20px;right:20px;--peek:62vh}.pd-media.open{left:12px;right:12px}}
 /* 링크가 있는 프로젝트의 버튼: 피그마처럼 연두색(누를 수 있음), 없으면 회색 그대로 */
@@ -153,7 +153,7 @@ body.sheet-open .pd-rail{opacity:1;pointer-events:auto;transform:translate(0,-50
 .pd-rail button{position:relative;flex:none;width:64px;aspect-ratio:16/9;border:1px solid #111;padding:0;border-radius:0;overflow:hidden;cursor:pointer;background:#d9d9d9;
   opacity:.45;outline:1.5px solid transparent;outline-offset:2px;transition:opacity .25s,outline-color .25s}
 .pd-rail button img{display:block;width:100%;height:100%;object-fit:cover}
-.pd-rail button span{position:absolute;left:0;top:0;box-sizing:border-box;width:15px;height:15px;padding:0;display:flex;align-items:center;justify-content:center;font-family:'A2z',sans-serif;font-size:8px;line-height:1;letter-spacing:-.3px;color:#111;background:rgba(255,255,255,.92);border-right:1px solid #111;border-bottom:1px solid #111} /* 십자말풀이 칸 번호처럼: 왼쪽 위 작은 칸에 숫자 */
+.pd-rail button span{position:absolute;left:0;top:0;box-sizing:border-box;width:15px;height:15px;padding:0;display:flex;align-items:center;justify-content:center;font-family:'A2z',sans-serif;font-size:clamp(10px,0.5vw,10.4px);line-height:1;letter-spacing:-.3px;color:#111;background:rgba(255,255,255,.92);border-right:1px solid #111;border-bottom:1px solid #111} /* 십자말풀이 칸 번호처럼: 왼쪽 위 작은 칸에 숫자 */
 .pd-rail button:hover{opacity:.8}
 .pd-rail button.cur{opacity:1;outline-color:#111}
 /* 단축 바가 있으면 크게 본 자료는 그만큼 왼쪽으로 비켜 줌 */
