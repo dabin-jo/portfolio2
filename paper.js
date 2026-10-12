@@ -46,7 +46,7 @@ const Paper=(()=>{
   /* ---- 종이 한 장 ---- */
   const sheets=[...sec.querySelectorAll('.pf')].map(el=>{
     const id='pf'+(uid++),corner=el.dataset.corner||'tl';
-    const open=(el.dataset.open||'.5,.5').split(',').map(Number);
+    const openMax=el.dataset.open==='max',open=openMax?[.5,.5]:(el.dataset.open||'.5,.5').split(',').map(Number);
     const back=el.querySelector('.pf-back');
     // 밑판: 색 종이 + 글. 위의 종이(배경색)가 덮고 있다가, 모서리를 접으면 접힌 자리에서 드러남
     const under=document.createElement('div');under.className='pf-under';
@@ -62,7 +62,7 @@ const Paper=(()=>{
     el.appendChild(svg);
     el.tabIndex=0;el.setAttribute('role','button');el.setAttribute('aria-expanded','false');
     const q=s=>svg.querySelector(s);
-    return{el,corner,open,back,svg,grad:q(`#${id}g`),face:q('.pf-face'),flap:q('.pf-flap'),crease:q('.pf-crease'),
+    return{el,corner,open,openMax,back,svg,grad:q(`#${id}g`),face:q('.pf-face'),flap:q('.pf-flap'),crease:q('.pf-crease'),
       w:1,h:1,rect:[],C:{x:0,y:0},p:{x:0,y:0},v:{x:0,y:0},target:{x:0,y:0},state:'flat',hover:false,drag:null};
   });
 
@@ -87,7 +87,7 @@ const Paper=(()=>{
       const ux=R?-1:1,uy=B?-1:1;
       const a=Math.abs(dot({x:f.M.x-S.C.x,y:f.M.y-S.C.y},f.n)/(f.n.x*ux||1e-6)),b=Math.abs(dot({x:f.M.x-S.C.x,y:f.M.y-S.C.y},f.n)/(f.n.y*uy||1e-6));
       const pad=T+Math.min(w,h)*.04,wb=S.back.offsetWidth,hb=S.back.offsetHeight;
-      const sc=Math.max(.45,Math.min(1,(1-pad*(1/a+1/b)*1.15)/(wb/a+hb/b)));
+      const sc=Math.max(.6,Math.min(1,(1-pad*(1/a+1/b))/(wb/a+hb/b)));
       S.back.style.scale=sc.toFixed(3);
     }
   }
@@ -101,7 +101,13 @@ const Paper=(()=>{
     const f=Math.min(1,S.pw*.96/a,S.ph*.96/b);
     return{x:S.C.x+dx*f,y:S.C.y+dy*f};
   }
-  const openP=S=>limitP(S,{x:S.open[0]*S.w,y:S.open[1]*S.h});
+  /* 크게 접힌 자리. data-open="max"면 종이를 대각선으로 가장 크게(접히는 선이 두 변의 끝 근처를 지나게) 접음 */
+  function openP(S){
+    if(!S.openMax)return limitP(S,{x:S.open[0]*S.w,y:S.open[1]*S.h});
+    const ux=S.C.x>S.w/2?-1:1,uy=S.C.y>S.h/2?-1:1,a=S.pw*.95,b=S.ph*.95;
+    const A1={x:S.C.x+ux*a,y:S.C.y},A2={x:S.C.x,y:S.C.y+uy*b},dx=A2.x-A1.x,dy=A2.y-A1.y,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
+    const t=(S.C.x-A1.x)*nx+(S.C.y-A1.y)*ny;return{x:S.C.x-2*t*nx,y:S.C.y-2*t*ny}; // C를 그 선에 대해 뒤집은 점
+  }
   function goal(S){
     if(S.state==='flat')return{...S.C};
     if(S.state==='open')return openP(S);
@@ -147,6 +153,7 @@ const Paper=(()=>{
     el.addEventListener('pointerleave',()=>{S.hover=false;if(S.state==='rest')setState(S,'rest');});
     el.addEventListener('pointerdown',e=>{
       if(S.state==='flat'||e.button>0)return;
+      if(S.state==='open'&&e.target.closest('a'))return; // 펼친 상태에서 메일 주소를 누르면 끌기 대신 그냥 링크로(포인터를 잡으면 클릭이 링크에 안 감)
       S.drag={start:local(e),p0:{...S.p},moved:false,link:e.target.closest('a')};
       el.style.zIndex=++zTop;el.setPointerCapture(e.pointerId);
     });

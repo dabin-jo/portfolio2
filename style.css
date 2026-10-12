@@ -439,7 +439,7 @@ a.hl.cur{background-size:100% 100%}
 .end.pf-on .pf-stroke{animation:pfDraw .9s cubic-bezier(.6,.05,.3,1) .35s forwards}
 .end.pf-on .pf-stroke.s2{animation-delay:.85s}
 @keyframes pfDraw{to{stroke-dashoffset:0}}
-.pf-cols{position:absolute;left:56vw;top:4.5vh;width:min(22vw,420px);display:grid;grid-template-columns:1fr 1fr;gap:1.4vw;z-index:2;pointer-events:none;
+.pf-cols{position:absolute;left:50vw;top:max(8.5vh,72px);width:min(18.5vw,380px);display:grid;grid-template-columns:1fr 1fr;gap:1.4vw;z-index:2;pointer-events:none;
   opacity:0;transform:translateY(8px);transition:opacity .8s ease .5s,transform .8s ease .5s}
 .pf-cols p{margin:0;font-size:clamp(10px,.62vw,12px);line-height:1.6;color:#9a9a9f;word-break:keep-all}
 .end.pf-on .pf-cols{opacity:1;transform:none}
@@ -461,14 +461,15 @@ a.hl.cur{background-size:100% 100%}
 .pf-back p{margin:.5em 0 0;font-size:clamp(11px,.75vw,14px);line-height:1.55}
 .pf-k{display:block;font-size:clamp(11px,.7vw,13px);font-weight:700;letter-spacing:.18em}
 .pf-big{font-size:clamp(22px,2.2vw,42px)!important;line-height:1.05!important;font-weight:400;letter-spacing:-.02em}
-.pf-mail{display:inline-block;margin-top:.6em;font-size:clamp(12px,.85vw,16px);color:inherit;text-decoration:underline;text-underline-offset:3px}
+.pf-mail{display:inline-block;margin-top:.6em;font-size:clamp(13px,1vw,18px);color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer;position:relative;z-index:1}
+.pf.is-open .pf-mail:hover{text-decoration-thickness:2px}
 .pf-back dl{margin:.6em 0 0;font-size:clamp(11px,.78vw,15px);line-height:1.45}
 .pf-back dt{margin-top:.5em}
 .pf-back dd{margin:0;opacity:.65}
 .pf-lime{left:3.6vw;top:24vh;width:21vw;height:70vh}
 .pf-lime .pf-back{max-width:min(15vw,290px)}
-.pf-pink{right:3.6vw;top:3vh;width:19vw;height:27vh}
-.pf-pink .pf-back{max-width:min(14vw,270px)}
+.pf-pink{right:3.6vw;top:3vh;width:24vw;height:40vh}
+.pf-pink .pf-back{max-width:min(16vw,300px)}
 .pf-blue{right:3.6vw;bottom:5vh;width:38vw;height:46vh}
 .pf-blue .pf-back{max-width:min(26vw,500px)}
 /* 안내 · 저작권 */
