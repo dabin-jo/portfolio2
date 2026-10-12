@@ -174,7 +174,7 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
   };
   /* 전환용 빛 캔버스(화면 고정): 히어로 빛 → 반짝이는 점 → 빛 줄기(선) → 형광펜.
      ① 줄어듦: 모양 그대로(히어로와 같은 스프라이트) 작아져 작은 빛 덩어리가 됨(히어로 빛의 부드러운 번짐 그대로)
-     ② 날아감: 그 작은 빛이 천천히 돌며 휘어진 길을 따라 형광펜 자리로 날아가며, 뒤로 형광펜과 같은 색·굵기의 빛 꼬리(형광펜 줄기)를 남김
+     ② 갈라짐·날아감: 그 작은 빛이 맡은 형광펜 수만큼 갈라져, 각자 천천히 돌며 휘어진 길을 따라 형광펜 자리로 날아가며, 뒤로 형광펜과 같은 색·굵기의 빛 꼬리(형광펜 줄기)를 남김
      ③ 칠하기: 형광펜 왼쪽 끝에 닿으면 그대로 오른쪽으로 쓸고 지나가며 형광펜을 칠함(Find.paint) → 빛은 잦아들고 꼬리가 거둬짐
      전부 진행도(pA·pB) 기준이라 이전 버튼으로 돌아가면 그대로 역재생됨. 마지막 잦아듦만 시간 기준 */
   function createDive(){
@@ -201,39 +201,46 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
     const INK=[[228,255,140],[255,157,180],[75,132,225]]; // 형광펜 색(find.js HL과 같게: 국순당 lime · 소소복담 pink · 삼토 blue)
     const rgba=(c,a)=>`rgba(${c[0]},${c[1]},${c[2]},${a})`;
     /* 타임라인(u: 전환 전체 0→1) — 빛마다 살짝 엇갈려 출발(STAG) */
-    const SHRINK_END=.34,TRAVEL_START=.3,SWEEP_START=.82,STAG=[0,.03,.06];
+    const SHRINK_END=.34,TRAVEL_START=.3,STAG=[0,.03,.06];
     const BEND=[1,-1,1]; // 휘는 방향(서로 엇갈리게)
     const c01=v=>Math.max(0,Math.min(1,v));
     const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
     /* 빛이 지나갈 길: 히어로 자리 H → (휘어진 곡선) → 형광펜 왼쪽 끝 S → (수평으로) 형광펜 오른쪽 끝 E.
        곡선은 S에서 오른쪽을 향해 들어오도록 만들어서, 그대로 이어서 형광펜을 쓸 수 있게 함 */
-    function pathOf(i){
-      const H=HOMES[i],r=window.Find?Find.rect(i):null;
-      const S=r?{x:r.x0,y:r.y}:{x:innerWidth*.3,y:innerHeight*.4},E=r?{x:r.x1,y:r.y}:{x:S.x+200,y:S.y},lh=r?r.h:40;
-      const vx=S.x-H.x,vy=S.y-H.y,len=Math.hypot(vx,vy)||1,k=BEND[i],Wv=innerWidth;
-      /* 지나갈 점들: 히어로 자리 H → (필요하면 크게 돌아 나오는 점 Q) → 형광펜 앞 A → 형광펜 왼쪽 끝 S.
-         A→S는 수평이라 형광펜으로 그대로 이어지고, 형광펜이 H보다 왼쪽에 있으면(되돌아와야 하면) Q에서 넓게 돌아서
-         급하게 꺾이지 않게 함. 점들을 부드러운 곡선(centripetal Catmull-Rom)으로 이음 */
-      const ap=Math.max(lh*3,Wv*.07),A={x:S.x-ap,y:S.y};
-      const way=[H];
-      if(H.x>A.x-ap*.5){const rr=Math.max(lh*3,Wv*.07),side=H.y>S.y?1:-1;way.push({x:A.x-rr,y:A.y+side*rr*1.1});}
-      way.push(A,S);
-      const px=-vy/len,py=vx/len,P0={x:H.x-px*k*len*.5,y:H.y-py*k*len*.5},PN={x:S.x+ap,y:S.y}; // 시작은 옆으로 휘어 나가게, 끝은 오른쪽을 향하게
-      const all=[P0,...way,PN],pts=[];let d=0,prev=null;
+    /* 빛 i가 지나갈 길: 히어로 자리 H → 첫 형광펜 왼쪽 끝으로 날아가 오른쪽 끝까지 쓸고 → 다음 형광펜으로 휘돌아 가서 또 쓸고 …
+       (Find.route(i) = 그 빛이 칠할 형광펜들). 날아가는 구간은 부드러운 곡선(centripetal Catmull-Rom),
+       형광펜에 들어갈 땐 항상 왼쪽에서 수평으로 들어오고, 되돌아와야 하면 넓게 돌아서 급하게 꺾이지 않게 함.
+       marks[j] = j번째 형광펜을 쓰는 구간의 길 위 거리(ds 시작 · de 끝) */
+    function crInto(pts,all,d,skipFirst){
       const tj=(a,b,t)=>t+Math.pow(Math.hypot(b.x-a.x,b.y-a.y)||1e-3,.5);
+      let prev=pts.length?pts[pts.length-1]:null;
       for(let s=1;s<all.length-2;s++){
         const p0=all[s-1],p1=all[s],p2=all[s+1],p3=all[s+2];
         const t0=0,t1=tj(p0,p1,t0),t2=tj(p1,p2,t1),t3=tj(p2,p3,t2);
         const n=Math.max(12,Math.round(Math.hypot(p2.x-p1.x,p2.y-p1.y)/8));
-        for(let j=(s===1?0:1);j<=n;j++){
+        for(let j=(s===1&&!skipFirst?0:1);j<=n;j++){
           const t=t1+(t2-t1)*j/n,L=(pa,pb,ta,tb)=>({x:(tb-t)/(tb-ta)*pa.x+(t-ta)/(tb-ta)*pb.x,y:(tb-t)/(tb-ta)*pa.y+(t-ta)/(tb-ta)*pb.y});
           const A1=L(p0,p1,t0,t1),A2=L(p1,p2,t1,t2),A3=L(p2,p3,t2,t3),B1=L(A1,A2,t0,t2),B2=L(A2,A3,t1,t3),C=L(B1,B2,t1,t2);
           if(prev)d+=Math.hypot(C.x-prev.x,C.y-prev.y);pts.push(prev={x:C.x,y:C.y,d});
         }
       }
-      const Lb=d;
-      for(let j=1;j<=24;j++){const x=S.x+(E.x-S.x)*j/24;d+=(E.x-S.x)/24;pts.push({x,y:S.y,d});}
-      return{pts,Lb,L:d,Ls:d-Lb,lh,H};
+      return d;
+    }
+    function pathOf(i,j){
+      const H=HOMES[i],route=(window.Find&&Find.route(i))||[];
+      const r=route[j]||{x0:innerWidth*.3,x1:innerWidth*.3+200,y:innerHeight*.4,h:40};
+      const lh=r.h,Wv=innerWidth,ap=Math.max(lh*3,Wv*.07),rr=Math.max(lh*3,Wv*.07);
+      const k=BEND[i]*(j%2?-1:1); // 갈라진 빛들이 서로 반대쪽으로 휘어 나가게
+      const S={x:r.x0,y:r.y},E={x:r.x1,y:r.y};
+      const vx=S.x-H.x,vy=S.y-H.y,len=Math.hypot(vx,vy)||1,px=-vy/len,py=vx/len;
+      // 형광펜 앞 A: 빛이 오는 쪽(위/아래)에서 비스듬히 내려앉듯 들어오게 → 크게 돌아 나오는 고리 없이 짧은 호
+      const dn=Math.sign(S.y-H.y)||1,A={x:S.x-ap*.7,y:S.y-dn*Math.min(ap*.5,Math.abs(vy)*.4)};
+      const P0={x:H.x-px*k*len*.25,y:H.y-py*k*len*.25}; // 갈라질 때 살짝 옆으로 벌어지며 출발
+      const way=[H,A,S];
+      const pts=[];let d=crInto(pts,[P0,...way,{x:S.x+ap,y:S.y}],0,false);
+      const ds=d;
+      for(let q=1;q<=24;q++){const x=S.x+(E.x-S.x)*q/24;d+=(E.x-S.x)/24;pts.push({x,y:S.y,d});}
+      return{pts,L:d,marks:[{ds,de:d}],lh,H};
     }
     function at(P,d){ // 길 위에서 거리 d인 점
       const a=P.pts;if(d<=0)return a[0];if(d>=P.L)return a[a.length-1];
@@ -266,9 +273,14 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
       dctx.globalCompositeOperation='lighter';dctx.filter='blur(6px)';
       let e=ribbonPath(P,d0,d1,band,2);dctx.fillStyle=fadeFill(e,glow,.12*fade);dctx.fill();
       dctx.filter='none';
-      // 형광펜 띠: 형광펜 자리(길이 Lb)에 닿으면 거기부터는 실제 형광펜(DOM)이 이어받음
-      const e1=Math.min(d1,P.Lb);
-      if(e1-d0>1){dctx.globalCompositeOperation='source-over';e=ribbonPath(P,d0,e1,band,1);dctx.fillStyle=fadeFill(e,ink,.9*fade);dctx.fill();}
+      // 형광펜 띠: 날아가는 구간에만 그림. 형광펜 위(쓸고 지나가는 구간)는 실제 형광펜(DOM)이 칠해짐
+      dctx.globalCompositeOperation='source-over';
+      let s0=0;
+      P.marks.forEach(m=>{ // 날아가는 구간 = 이전 형광펜 끝(s0) ~ 이번 형광펜 시작(m.ds)
+        const a0=Math.max(d0,s0),a1=Math.min(d1,m.ds);
+        if(a1-a0>1){const tailIn=a0===d0;const ee=ribbonPath(P,a0,a1,band,1);dctx.fillStyle=tailIn?fadeFill(ee,ink,.9*fade):rgba(ink,.9*fade);dctx.fill();}
+        s0=m.de;
+      });
       dctx.globalCompositeOperation='lighter';
     }
     let linger=0,lingerRaf=0,lastArgs=[0,0];
@@ -277,33 +289,37 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
       const W=innerWidth,H=innerHeight,now=performance.now();lastT=now;
       if(cvD.width!==W||cvD.height!==H){cvD.width=W;cvD.height=H;off.width=Math.ceil(W*LS);off.height=Math.ceil(H*LS);}
       const sc=Math.max(w,h)*.62,U=Math.min(1,pA*.3+pB*.7),fade=1-lk;
-      // 빛마다 진행 상태 계산
+      // 빛마다 진행 상태 계산: 빛 하나가 맡은 형광펜 수만큼 갈라져서(같은 자리에서 출발) 각자 하나씩 날아가 칠함
       const L=BLOBS.map((b,i)=>{
-        const p=pathOf(i),u=c01((U-STAG[i])/(1-STAG[2])); // 빛마다 엇갈린 진행도
-        const ks=easeIO(c01(u/SHRINK_END)); // 줄어드는 정도
-        const tv=c01((u-TRAVEL_START)/(SWEEP_START-TRAVEL_START)),sw=c01((u-SWEEP_START)/(1-SWEEP_START));
-        const d=tv<1?p.Lb*easeIO(tv):p.Lb+p.Ls*(1-Math.pow(1-sw,1.6));
-        return{b,p,u,ks,tv,sw,d,pos:at(p,d)};
+        const u=c01((U-STAG[i])/(1-STAG[2])),ks=easeIO(c01(u/SHRINK_END)); // 줄어드는 정도
+        const n=Math.max(1,window.Find?Find.route(i).length:1);
+        const kids=[];
+        for(let j=0;j<n;j++){
+          const p=pathOf(i,j),tv=c01((u-TRAVEL_START-j*.03)/(1-TRAVEL_START-.06)),d=p.L*easeIO(tv);
+          kids.push({p,tv,d,pos:at(p,d),sw:c01((d-p.marks[0].ds)/((p.L-p.marks[0].ds)||1))});
+        }
+        return{b,u,ks,n,kids};
       });
       dctx.clearRect(0,0,W,H);
       // ② 빛 꼬리(형광펜 줄기) + 형광펜 칠하기 — 빛 머리 아래에 깔림
-      L.forEach(({p,tv,d},i)=>{
-        window.Find&&Find.paint(i,c01((d-p.Lb)/(p.Ls||1)));
-        const TL=Math.min(p.Lb*.85,innerWidth*.5)*(1-lk); // 꼬리 길이(끝나면 거둬짐)
+      L.forEach(({kids},i)=>kids.forEach(({p,tv,d},j)=>{
+        const m=p.marks[0];window.Find&&Find.paintAt(i,j,c01((d-m.ds)/((m.de-m.ds)||1)));
+        const TL=Math.min(m.ds*.5,innerWidth*.2)*(1-lk); // 꼬리 길이(짧게 — 여러 줄기가 겹쳐 어수선하지 않게. 끝나면 거둬짐)
         if(tv>0)drawTrail(p,Math.max(0,d-TL),d,p.lh*.82,INK[i],GLOW[i],fade);
-      });
+      }));
       // ① 빛 머리: 히어로 빛과 같은 모양·색·번짐(같은 스프라이트)이 작아진 채로 꼬리 앞에서 날아감.
-      //    검정 바탕에 lighten → 밝기를 투명도로 바꿔서 그림(히어로와 같은 방식)
+      //    갈라지기 전엔 겹쳐 있어 하나로 보이고, 날아가기 시작하면 갈라짐. 검정 바탕에 lighten → 밝기를 투명도로
       ox.setTransform(1,0,0,1,0,0);ox.globalCompositeOperation='source-over';ox.globalAlpha=1;
       ox.fillStyle='#000';ox.fillRect(0,0,off.width,off.height);
       ox.setTransform(LS,0,0,LS,0,0);ox.globalCompositeOperation='lighten';
-      L.forEach(({b,p,ks,tv,sw,d,pos},i)=>{
-        const D0=b.rr*sc*2,Dpt=p.lh*2.3,D=D0*Math.pow(Dpt/D0,ks)*(1-.25*sw)*(1-.5*lk);
+      L.forEach(({b,ks,n,kids},i)=>kids.forEach(({p,tv,sw,d,pos},j)=>{
+        const split=c01(tv*6); // 갈라지면서 조금 작아짐
+        const D0=b.rr*sc*2,Dpt=p.lh*2.3*(1-.18*split*(n>1?1:0)),D=D0*Math.pow(Dpt/D0,ks)*(1-.25*sw)*(1-.5*lk);
         const lift=-H*.03*Math.sin(Math.PI*Math.min(1,ks*1.2))*(1-tv);
-        const rot=ks*ks*.6*BEND[i]+d*.004*BEND[i]; // 날아가며 천천히 돎
+        const rot=ks*ks*.6*BEND[i]+d*.004*BEND[i]*(j%2?-1:1); // 날아가며 천천히 돎
         ox.globalAlpha=fade;const sz=D*PAD;
         ox.save();ox.translate(pos.x,pos.y+lift);ox.rotate(rot);ox.drawImage(sprites[i],-sz/2,-sz/2,sz,sz);ox.restore();
-      });
+      }));
       ox.globalAlpha=1;
       const img=ox.getImageData(0,0,off.width,off.height),px=img.data;
       for(let q=0;q<px.length;q+=4){const m=Math.max(px[q],px[q+1],px[q+2]);if(!m){px[q+3]=0;continue;}const k=255/m;px[q]*=k;px[q+1]*=k;px[q+2]*=k;px[q+3]=m;}
@@ -313,12 +329,12 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
       dctx.drawImage(off,0,0,W,H);dctx.filter='none';
       // 빛 머리 둘레의 은은한 번짐(뾰족한 반짝임 없이 부드럽게)
       dctx.globalCompositeOperation='lighter';
-      L.forEach(({p,ks,pos},i)=>{
-        const a=.22*c01(ks*1.4)*fade;if(a<.01)return;
+      L.forEach(({ks,kids},i)=>kids.forEach(({p,pos})=>{
+        const a=.22*c01(ks*1.4)*fade/Math.sqrt(kids.length*.8);if(a<.01)return;
         const R=p.lh*2.2,g=dctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,R);
         g.addColorStop(0,rgba(GLOW[i],a));g.addColorStop(1,rgba(GLOW[i],0));
         dctx.fillStyle=g;dctx.beginPath();dctx.arc(pos.x,pos.y,R,0,7);dctx.fill();
-      });
+      }));
       dctx.globalCompositeOperation='source-over';
       if(!shown){cvD.style.transition='none';cvD.style.opacity=1;shown=true;}
     }
@@ -865,7 +881,7 @@ window.EyeKit=(()=>{
     })(t0);
   }
   sw.style.pointerEvents='none';sw.tabIndex=-1;
-  if(!intro.classList.contains('done'))setTimeout(start,700);
+  setTimeout(()=>{if(!intro.classList.contains('done'))start();},700); // 상세 페이지에서 돌아온 경우(인트로 건너뜀)엔 켜지 않음
 })();
 /* ===== 장면(한 화면) 진행 =====
    페이지를 아래로 스크롤하지 않고, 늘 100vh 한 화면 안에서 장면만 바뀜: 01 LOOK(빛) → 02 FIND(형광펜) → 03 REVEAL(기획 의도).
@@ -908,11 +924,11 @@ const Scenes=(()=>{
     dispatchEvent(new CustomEvent('scene-move',{detail:NAMES[to].toLowerCase()})); // 내비 눈: 넘어가기 시작할 때 눈을 뜨고 그쪽을 봄
     if(from===0&&to===1){
       vis(cw,true);
-      await tween(3200,t=>{const u=t;__heroCw.set(Math.min(1,u/.3),Math.max(0,(u-.3)/.7));},sine);
+      await tween(4000,t=>{const u=t;__heroCw.set(Math.min(1,u/.3),Math.max(0,(u-.3)/.7));},sine);
       vis(heroWrap,false);showCap();
     }else if(from===1&&to===0){
       vis(heroWrap,true);
-      await tween(2600,t=>{const u=1-t;__heroCw.set(Math.min(1,u/.3),Math.max(0,(u-.3)/.7));},sine);
+      await tween(2800,t=>{const u=1-t;__heroCw.set(Math.min(1,u/.3),Math.max(0,(u-.3)/.7));},sine);
       vis(cw,false);
     }else if(from===1&&to===2){
       window.Paper&&Paper.reset();await fadeSwap(cw,end);end.classList.add('on');window.Paper&&Paper.enter();

@@ -1,7 +1,7 @@
 /* ===== 02 FIND: 형광펜 =====
    화면 가득 옅게 깔린 문장(FIND_LINE을 이어 붙임) 사이사이에 프로젝트 이름이 끼어 있고, 그 위에 형광펜이 칠해짐.
-   - 히어로 → FIND 전환(script.js createDive)에서 빛 3개가 반짝이는 점 → 빛 꼬리가 되어 각자 맡은 형광펜(rect)으로 날아가
-     그대로 쓸며 칠함(paint). 다 오면 Find.play()가 불려 나머지 형광펜이 차례로 칠해짐.
+   - 히어로 → FIND 전환(script.js createDive)에서 빛 3개가 작아져 빛 꼬리를 그리며 날아가, 각자 맡은 형광펜들(route)을
+     위에서부터 차례로 쓸며 전부 칠함(paintAt). 다 오면 Find.play()가 칠한 상태를 굳힘.
    - 형광펜에 마우스를 올리면 프로젝트 미리보기 카드가 커서를 따라오고, 누르면 상세 페이지(project.html?p=번호)로.
    - 다 칠해지면 Find.done = true → 다음 장면(REVEAL)으로 넘어갈 수 있음.
    script.js보다 먼저 불러옴(script.js가 window.Find를 씀). */
@@ -22,24 +22,24 @@ const Find=(()=>{
   /* 글에 들어갈 형광펜(위에서부터 순서대로).
      gap: 앞 형광펜이 끝난 뒤 배경 문장을 몇 글자 흘려보내고 나올지(줄 위치 조절용)
      p: 상세 페이지 번호(project.js PROJECTS 순서: 0 소소복담 · 1 국순당 · 2 AI와 디자인 · 3 해잇 · 4 삼토 · 5 집메이트)
-     light: 히어로에서 넘어올 때 이 형광펜 자리로 떨어질 빛(0 초록 별 · 1 핑크 육각형 · 2 파랑 네잎)
+     light: 이 형광펜을 칠할 빛(0 초록 별 · 1 핑크 육각형 · 2 파랑 네잎). 빛 하나가 자기 형광펜들을 위에서부터 차례로 돌며 칠함
      deco: 프로젝트가 아닌 장식 — 배경 문장 속 이 구절을 찾아 칠하기만 함(누를 수 없음)
      img/g: 마우스를 올렸을 때 미리보기 카드의 이미지와 한 줄 설명 */
   const FIND_ITEMS=[
     {gap:18,t:'삼토 페스티벌 리디자인 프로젝트',p:4,c:'blue',light:2,img:'assets/slides/samto/1.jpg',g:'Redesign · Visual  |  2025'},
     {gap:42,t:'국순당 웹사이트 리디자인 프로젝트',p:1,c:'lime',light:0,img:'assets/slides/kooksoondang/1.jpg',g:'Web · Redesign  |  2026'},
-    {gap:30,deco:'드러내는 디자이너입니다',c:'soft'},
+    {gap:30,deco:'드러내는 디자이너입니다',c:'soft',light:1},
     {gap:46,t:'소소복담 브랜드 프로젝트',p:0,c:'pink',light:1,img:'assets/slides/sosobokdam/1.jpg',g:'Brand · Package  |  2025'},
-    {gap:44,t:'발표 앱 해잇',p:3,c:'lime',img:'assets/slides/haeit/1.jpg',g:'UX/UI · App  |  2025'},
-    {gap:40,t:'집메이트',p:5,c:'blue',img:'assets/slides/zipmate/1.jpg',g:'UX/UI · Web App  |  2026'},
-    {gap:38,t:'AI와 디자인의 상관관계',p:2,c:'pink',img:'assets/hover/g7.png',g:'Research · Editorial  |  2024'},
+    {gap:44,t:'발표 앱 해잇',p:3,c:'lime',light:0,img:'assets/slides/haeit/1.jpg',g:'UX/UI · App  |  2025'},
+    {gap:40,t:'집메이트',p:5,c:'blue',light:2,img:'assets/slides/zipmate/1.jpg',g:'UX/UI · Web App  |  2026'},
+    {gap:38,t:'AI와 디자인의 상관관계',p:2,c:'pink',light:1,img:'assets/hover/g7.png',g:'Research · Editorial  |  2024'},
   ];
   const TOTAL_CHARS=1600; // 배경 문장 전체 길이(화면보다 넉넉히 — 넘치는 건 잘림)
   const SWEEP_MS=650,STAGGER_MS=280; // 형광펜 한 줄 칠하는 시간 / 다음 형광펜까지 간격
 
   const sec=document.getElementById('find'),box=document.getElementById('findText'),peek=document.getElementById('findPeek');
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const api={done:false,play,reset,target,rect,paint};
+  const api={done:false,play,reset,target,rect,route,paintAt};
 
   /* 글 만들기: 배경 문장을 흘려보내다가 gap만큼 지나면 형광펜을 끼워 넣음 */
   const marks=[];
@@ -69,23 +69,23 @@ const Find=(()=>{
     function take0(p,n){let s='';for(let k=0;k<n;k++)s+=FIND_LINE[(p+k)%FIND_LINE.length];return s;}
   })();
 
-  /* 빛이 날아올 형광펜의 첫 줄(화면 좌표): 왼쪽 끝 x0 · 오른쪽 끝 x1 · 가운데 높이 y · 줄 높이 h. script.js 전환 캔버스가 매 프레임 읽음 */
-  const lightMark=i=>marks.find(m=>m.it.light===i);
-  function rect(i){
-    const m=lightMark(i);if(!m)return null;
-    const r=m.el.getClientRects()[0]||m.el.getBoundingClientRect();
-    return{x0:r.left,x1:r.right,y:r.top+r.height/2,h:r.height};
+  /* 빛 i가 칠할 형광펜들(글 순서대로)의 첫 줄 위치(화면 좌표): 왼쪽 끝 x0 · 오른쪽 끝 x1 · 가운데 높이 y · 줄 높이 h.
+     script.js 전환 캔버스가 매 프레임 읽어서 빛이 지나갈 길을 만듦 */
+  const routeMarks=i=>marks.filter(m=>m.it.light===i);
+  function route(i){
+    return routeMarks(i).map(m=>{const r=m.el.getClientRects()[0]||m.el.getBoundingClientRect();return{x0:r.left,x1:r.right,y:r.top+r.height/2,h:r.height};});
   }
+  function rect(i){return route(i)[0]||null;}
   function target(i){const r=rect(i);return r?{x:r.x0+r.h*.25,y:r.y,h:r.h}:{x:innerWidth/2,y:innerHeight/2,h:40};}
-  /* 빛이 지나가는 만큼 형광펜을 칠함(k: 0→1). 전환 캔버스가 진행도에 맞춰 부름(역재생 때는 다시 지워짐) */
-  function paint(i,k){
-    const m=lightMark(i);if(!m)return;const el=m.el;
+  /* 빛 i의 j번째 형광펜을 빛이 지나간 만큼 칠함(k: 0→1). 역재생 때는 다시 지워짐 */
+  function paintAt(i,j,k){
+    const m=routeMarks(i)[j];if(!m)return;const el=m.el;
     el.style.transition='none';el.style.backgroundSize=(k*100).toFixed(1)+'% 82%';
     el.classList.toggle('painting',k>0);el.classList.toggle('lit',k>.55);
   }
   function unpaint(el){el.style.transition='';el.style.backgroundSize='';el.classList.remove('painting','lit');}
 
-  /* 칠하기: 빛이 맡은 형광펜 3개는 전환 중에 빛이 직접 칠해 둠(paint) → 여기서는 그 상태를 굳히고, 나머지가 위에서부터 차례로 */
+  /* 칠하기: 빛이 맡은 형광펜은 전환 중에 빛이 직접 칠해 둠(paintAt) → 여기서는 그 상태를 굳힘. 빛이 안 맡은 형광펜이 있으면 차례로 */
   let timers=[];
   function play(instant){
     timers.forEach(clearTimeout);timers=[];
