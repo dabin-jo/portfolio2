@@ -12,7 +12,6 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
 (()=>{
   const hero=document.getElementById('hero'),heroWrap=document.getElementById('heroWrap'),cv=document.getElementById('hc'),ctx=cv.getContext('2d');
   const bgLayer=document.getElementById('bgLayer');
-  const grainEl=hero.querySelector('.grain'); // 배경은 여기 한 곳에서만 바꿈(섹션 경계에 색이 반으로 나뉘는 문제 방지)
   cv.style.willChange='transform,opacity';
   // 퍼즐이 끝난 뒤(=body 잠금 해제 후) 스크롤하면 0→1로 진행되는 값. GSAP ScrollTrigger의 onUpdate(아래)가
   // 매 스크롤마다 갱신하고, draw()는 이 값만 읽어서 리본/배경색/텍스트 페이드를 전부 그려냄
@@ -60,29 +59,24 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
   let w=0,h=0;
   let HOMES=[{x:0,y:0},{x:0,y:0},{x:0,y:0}],SNAPR=[0,0,0],heroOff={x:0,y:0};
   const clampX=(x,m=0)=>Math.max(m,Math.min(w-m,x)),clampY=(y,m=0)=>Math.max(m,Math.min(h-m,y));
+  /* 피그마 2024:40 값: 도형 가운데(homes)·크기 반지름(r: softSprite 기준 — 별 893px/0.9, 육각형 825.6px/0.88, 네잎 577px/0.82의 절반) */
+  const DESIGN={W:1920,H:1080,homes:[{x:555.5,y:447},{x:1407.17,y:464.33},{x:960.5,y:753}],r:[893/2/.9,825.6/2/.88,577/2/.82*.9]}; // 네잎은 4개 원 합집합이 피그마 Union보다 커 보여서 화면 비교로 0.9배
   function size(){
     w=hero.clientWidth;h=hero.clientHeight;
     cv.width=w;cv.height=h; // devicePixelRatio 고정 1, 원래 해상도 그대로(저해상도 확대 안 함)
     const hr=hero.getBoundingClientRect();
-    // 슬롯(글자 자리)은 실제 텍스트가 CSS로 놓인 위치를 그대로 읽어와 계산 — 화면 크기가 달라져도 항상 정확히 맞음
-    // 원의 밝은 중심(하이라이트)이 빛줄기 방향(b.dir)으로 치우쳐 있어서, 원 자체를 글자 중심에 두면
-    // 눈으로 보기엔 빛이 그 방향으로 밀려 보임 → 치우친 만큼 반대로 옮겨 "보이는 빛의 중심"이 글자 중심에 오게 함
+    /* 피그마 2024:40(1920×1080) 배치를 그대로: 판 전체를 화면에 맞게 줄이고/늘려(가운데 정렬) 빛 자리·크기·글자 위치를 넣음.
+       빛 크기 r은 피그마 도형 크기에서 계산(softSprite가 그리는 실제 크기 = 피그마 도형 크기) */
+    const DS=Math.min(w/DESIGN.W,h/DESIGN.H),DX=(w-DESIGN.W*DS)/2,DY=(h-DESIGN.H*DS)/2;
     const scH=Math.max(w,h)*.62;
-    HOMES=texts.map((el,i)=>{
-      const tr=el.getBoundingClientRect(),b=BLOBS[i],r=b.rr*scH,a=b.dir*Math.PI/180,k=b.hiMag*r*.42;
-      return {x:(tr.left+tr.right)/2-hr.left-Math.cos(a)*k,y:(tr.top+tr.bottom)/2-hr.top-Math.sin(a)*k};
+    BLOBS.forEach((b,i)=>{b.rr=DESIGN.r[i]*DS/scH;});
+    HOMES=DESIGN.homes.map(p=>({x:DX+p.x*DS,y:DY+p.y*DS}));
+    texts.forEach(el=>{
+      const x=+el.dataset.x,y=+el.dataset.y;
+      el.style.left=(DX+x*DS)+'px';el.style.top=(DY+y*DS)+'px';
+      el.style.transform=`scale(${DS})`+(el.dataset.center?' translateX(-50%)':'');
     });
-    /* 빛 세 개(=글자 자리)가 이루는 덩어리 전체를 화면 한가운데로: 모양별 실제 크기로 바깥 경계를 구해
-       가로·세로 여백이 같아지도록 글자와 빛을 함께 옮김(--hx/--hy). 이미 옮겨둔 만큼은 빼고 다시 계산 */
-    HOMES=HOMES.map(p=>({x:p.x-heroOff.x,y:p.y-heroOff.y}));
-    const EXT={star:.9,clover:.82,hex:.86};
-    let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
-    HOMES.forEach((p,i)=>{const e=BLOBS[i].rr*scH*EXT[BLOBS[i].shape];x0=Math.min(x0,p.x-e);x1=Math.max(x1,p.x+e);y0=Math.min(y0,p.y-e);y1=Math.max(y1,p.y+e);});
-    // 가로: 가운데 빛(파랑 네잎)의 보이는 중심을 화면 가운데에 맞춤 / 세로: 덩어리 가운데보다 화면 높이의 4%만큼 위로
-    const mid=BLOBS.findIndex(b=>b.shape==='clover');
-    heroOff={x:Math.round(w/2-(mid>=0?HOMES[mid].x:(x0+x1)/2)),y:Math.round(h/2-(y0+y1)/2-h*.04)};
-    HOMES=HOMES.map(p=>({x:p.x+heroOff.x,y:p.y+heroOff.y}));
-    hero.style.setProperty('--hx',heroOff.x+'px');hero.style.setProperty('--hy',heroOff.y+'px');
+    heroOff={x:0,y:0};hero.style.setProperty('--hx','0px');hero.style.setProperty('--hy','0px');
     SNAPR=texts.map(el=>{
       const tr=el.getBoundingClientRect();
       return Math.min(100,Math.max(40,Math.hypot(tr.width,tr.height)/2*.85));
@@ -154,7 +148,6 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
     const rC=Math.round(8+(33-8)*bp),bC=Math.round(9+(36-9)*bp);
     bgLayer.style.background=`rgb(${rC},${rC},${bC})`;
     document.body.style.background=bgLayer.style.background;
-    if(grainEl)grainEl.style.opacity=(.12*(1-bp)).toFixed(3);
     findSec.style.opacity=smoothstep(clamp01(pB/.55)).toFixed(3); // FIND 화면은 제자리에서 서서히 나타남
     dive.render(pA,pB);
     if(pB>=.995&&!findPlayed){findPlayed=true;window.Find&&Find.play();} // 빛이 맡은 형광펜을 다 칠하면 나머지도 차례로

@@ -34,6 +34,7 @@
 </head>
 <body class="lock">
 <div id="bgLayer" aria-hidden="true"></div>
+<div class="grain" id="grain" aria-hidden="true"></div>
 <!-- 한 화면 안에서 장면을 오가는 내비게이션(script.js 맨 아래 Scenes). 시선의 흐름 = 사이트 구조: 비추어 보고 → 찾고 → 드러냄 -->
 <nav class="snav" id="snav" aria-label="장면 이동">
   <button type="button" class="snav-eye" id="snavEye" aria-label="장면 메뉴 열기" aria-expanded="false"></button>
@@ -60,28 +61,33 @@
 <section class="hero" id="hero">
   <!-- 가운데 인물 자리는 우선 비워둡니다. -->
   <!-- 세 빛(초록 별 · 핑크 육각형 · 파랑 네잎)에 각각 놓이는 글자. 빛은 글자 상자 가운데로 모임 (피그마 161:309) -->
-  <div class="tb tb-a" id="tb0">
-    <p class="hs-state">무심코 지나치는 순간들 속에서<br>새로운 시선으로 의미를 발견하고,<br>숨겨진 가치를 드러내는 디자이너입니다.</p>
+  <!-- 세 빛(초록 별 · 핑크 육각형 · 파랑 네잎)에 놓이는 글자. 위치·크기는 피그마 2024:40(1920×1080) 그대로 —
+       script.js size()가 화면 크기에 맞춰 1920×1080 판을 통째로 줄이고 늘려서 놓음(글자 크기는 아래 CSS의 피그마 px 값) -->
+  <div class="tb tb-a hd" id="tb0" data-x="555.5" data-y="402" data-center="1">
+    <p class="hd-state">무심코 지나치는 순간들 속에서<br>새로운 시선으로 의미를 발견하고,<br>숨겨진 가치를 드러내는 디자이너입니다.</p>
   </div>
-  <div class="tb tb-b" id="tb1">
-    <div class="hs-skills">
-      <p class="sk-t">✦ Skills ✦</p>
-      <div class="sk-row">
-        <div class="sk-g"><p class="sk-h">Design</p><ul><li><img src="assets/skills/ps.svg" alt="" style="--h:27.5"><span>Photoshop</span></li><li><img src="assets/skills/ai.svg" alt="" style="--h:28.75"><span>Illustrator</span></li><li><img src="assets/skills/id.svg" alt="" style="--h:29.4"><span>InDesign</span></li><li><img src="assets/skills/figma.svg" alt="" style="--h:32"><span>Figma</span></li></ul></div>
-        <div class="sk-g"><p class="sk-h">Motion</p><ul><li><img src="assets/skills/pr.svg" alt="" style="--h:26.9"><span>Premiere Pro</span></li><li><img src="assets/skills/ae.svg" alt="" style="--h:27.2"><span>After Effects</span></li></ul></div>
+  <div class="tb tb-b hd" id="tb1" data-x="1188.67" data-y="318.93">
+    <div class="hd-skills">
+      <p class="hd-sk-t">✦ Skills ✦</p>
+      <div class="hd-sk-rows">
+        <div class="hd-sk-row">
+          <div class="hd-sk-g" style="width:252px"><p class="hd-sk-h">Design</p><ul><li style="width:59px"><img src="assets/skills/ps.svg" alt="" style="width:49.11px;height:38.93px"><span>Photoshop</span></li><li style="width:51px"><img src="assets/skills/ai.svg" alt="" style="width:45.05px;height:39.85px"><span>Illustrator</span></li><li style="width:47px"><img src="assets/skills/id.svg" alt="" style="width:35.09px;height:39.27px"><span>InDesign</span></li><li style="width:35px"><img src="assets/skills/figma.svg" alt="" style="width:26.57px;height:39.85px"><span>Figma</span></li></ul></div>
+          <div class="hd-sk-g" style="width:161px"><p class="hd-sk-h">Motion</p><ul class="mid"><li style="width:72px"><img src="assets/skills/pr.svg" alt="" style="width:46.05px;height:38.82px"><span>Premiere Pro</span></li><li style="width:69px"><img src="assets/skills/ae.svg" alt="" style="width:59.07px;height:38.93px"><span>After Effects</span></li></ul></div>
+        </div>
+        <div class="hd-sk-g" style="width:304.04px"><p class="hd-sk-h">Develop</p><ul><li style="width:35px"><img src="assets/skills/html.svg" alt="" style="width:34.38px;height:38.86px"><span>HTML</span></li><li style="width:34.38px"><img src="assets/skills/css.svg" alt="" style="width:34.38px;height:38.86px"><span>CSS</span></li><li style="width:58px"><img src="assets/skills/js.svg" alt="" style="width:39.62px;height:28.1px"><span>JavaScript</span></li><li style="width:48.66px"><img src="assets/skills/react.svg" alt="" style="width:44.15px;height:38.86px"><span>React</span></li><li style="width:48px"><img src="assets/skills/vscode.svg" alt="" style="width:38.42px;height:38.22px"><span>VS Code</span></li></ul></div>
       </div>
-      <div class="sk-g sk-dev"><p class="sk-h">Develop</p><ul><li><img src="assets/skills/html.svg" alt="" style="--h:38.9"><span>HTML</span></li><li><img src="assets/skills/css.svg" alt="" style="--h:38.9"><span>CSS</span></li><li><img src="assets/skills/js.svg" alt="" style="--h:39"><span>JavaScript</span></li><li><img src="assets/skills/react.svg" alt="" style="--h:42.8"><span>React</span></li><li><img src="assets/skills/vscode.svg" alt="" style="--h:43.1"><span>VS Code</span></li></ul></div>
     </div>
   </div>
-  <div class="tb tb-c" id="tb2">
-    <div class="hs-name">
-      <h1>조다빈 <span class="en">JODABIN</span></h1>
-      <h2>UIUX DESIGNER &amp; CREATIVE THINKER</h2>
-      <ul class="kw"><li>UX/UI Design</li><li>Web Design</li><li>Branding Design</li><li>Graphic Design</li></ul>
+  <div class="tb tb-c hd" id="tb2" data-x="778.5" data-y="682.5">
+    <div class="hd-name">
+      <div class="hd-name-top">
+        <h1 class="hd-n"><span class="ko">조다빈</span><span class="en">JODABIN</span></h1>
+        <p class="hd-role">UIUX DESIGNER &amp; CREATIVE THINKER</p>
+      </div>
+      <div class="hd-kw"><ul><li>✦ UX/UI Design</li><li>✦ Web Design</li></ul><ul><li>✦ Branding Design</li><li>✦ Graphic Design</li></ul></div>
     </div>
   </div>
   <canvas id="hc"></canvas>
-  <div class="grain" aria-hidden="true"></div>
   <!-- 눈을 뜬 직후 먼저 보여주는 주제 한 줄 -->
   <div class="h-cap" id="hCap"><small>01 LOOK</small>아무것도 없어 보이는 공간도,<br>어떤 시선으로 보느냐에 따라 보이지 않던 게 보입니다.</div>
   <div class="hh" id="hh">빛으로 숨은 글자를 찾아보세요 · 0/3</div>
