@@ -210,13 +210,26 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
     function pathOf(i){
       const H=HOMES[i],r=window.Find?Find.rect(i):null;
       const S=r?{x:r.x0,y:r.y}:{x:innerWidth*.3,y:innerHeight*.4},E=r?{x:r.x1,y:r.y}:{x:S.x+200,y:S.y},lh=r?r.h:40;
-      const vx=S.x-H.x,vy=S.y-H.y,len=Math.hypot(vx,vy)||1,px=-vy/len,py=vx/len,k=BEND[i];
-      const c1={x:H.x+vx*.1+px*len*.6*k,y:H.y+vy*.1+py*len*.6*k};
-      const c2={x:S.x-Math.max(160,len*.45),y:S.y-k*len*.12};
-      const pts=[];let d=0,prev=null;
-      for(let j=0;j<=90;j++){
-        const t=j/90,m=1-t,x=m*m*m*H.x+3*m*m*t*c1.x+3*m*t*t*c2.x+t*t*t*S.x,y=m*m*m*H.y+3*m*m*t*c1.y+3*m*t*t*c2.y+t*t*t*S.y;
-        if(prev)d+=Math.hypot(x-prev.x,y-prev.y);pts.push(prev={x,y,d});
+      const vx=S.x-H.x,vy=S.y-H.y,len=Math.hypot(vx,vy)||1,k=BEND[i],Wv=innerWidth;
+      /* 지나갈 점들: 히어로 자리 H → (필요하면 크게 돌아 나오는 점 Q) → 형광펜 앞 A → 형광펜 왼쪽 끝 S.
+         A→S는 수평이라 형광펜으로 그대로 이어지고, 형광펜이 H보다 왼쪽에 있으면(되돌아와야 하면) Q에서 넓게 돌아서
+         급하게 꺾이지 않게 함. 점들을 부드러운 곡선(centripetal Catmull-Rom)으로 이음 */
+      const ap=Math.max(lh*3,Wv*.07),A={x:S.x-ap,y:S.y};
+      const way=[H];
+      if(H.x>A.x-ap*.5){const rr=Math.max(lh*3,Wv*.07),side=H.y>S.y?1:-1;way.push({x:A.x-rr,y:A.y+side*rr*1.1});}
+      way.push(A,S);
+      const px=-vy/len,py=vx/len,P0={x:H.x-px*k*len*.5,y:H.y-py*k*len*.5},PN={x:S.x+ap,y:S.y}; // 시작은 옆으로 휘어 나가게, 끝은 오른쪽을 향하게
+      const all=[P0,...way,PN],pts=[];let d=0,prev=null;
+      const tj=(a,b,t)=>t+Math.pow(Math.hypot(b.x-a.x,b.y-a.y)||1e-3,.5);
+      for(let s=1;s<all.length-2;s++){
+        const p0=all[s-1],p1=all[s],p2=all[s+1],p3=all[s+2];
+        const t0=0,t1=tj(p0,p1,t0),t2=tj(p1,p2,t1),t3=tj(p2,p3,t2);
+        const n=Math.max(12,Math.round(Math.hypot(p2.x-p1.x,p2.y-p1.y)/8));
+        for(let j=(s===1?0:1);j<=n;j++){
+          const t=t1+(t2-t1)*j/n,L=(pa,pb,ta,tb)=>({x:(tb-t)/(tb-ta)*pa.x+(t-ta)/(tb-ta)*pb.x,y:(tb-t)/(tb-ta)*pa.y+(t-ta)/(tb-ta)*pb.y});
+          const A1=L(p0,p1,t0,t1),A2=L(p1,p2,t1,t2),A3=L(p2,p3,t2,t3),B1=L(A1,A2,t0,t2),B2=L(A2,A3,t1,t3),C=L(B1,B2,t1,t2);
+          if(prev)d+=Math.hypot(C.x-prev.x,C.y-prev.y);pts.push(prev={x:C.x,y:C.y,d});
+        }
       }
       const Lb=d;
       for(let j=1;j<=24;j++){const x=S.x+(E.x-S.x)*j/24;d+=(E.x-S.x)/24;pts.push({x,y:S.y,d});}
@@ -230,25 +243,33 @@ if('scrollRestoration' in history)history.scrollRestoration='manual';
     /* 빛 꼬리 = 형광펜 줄기: 형광펜과 같은 색·같은 굵기(줄 높이의 82%)의 납작한 띠가 빛 점 뒤로 이어짐.
        머리 쪽은 진하고 꼬리 쪽으로 갈수록 옅어지고 조금 가늘어짐. 띠는 겹치지 않는 사각형 조각으로 채워서(둥근 끝 X)
        형광펜으로 그은 것처럼 보이게 하고, 위에 은은한 빛 번짐과 가는 하얀 심만 얹음 */
-    function drawTrail(P,d0,d1,band,ink,glow,fade){ // 형광펜 위(길이 Lb 이후)는 실제 형광펜(DOM)이 칠해지므로 띠는 빛만 얹음
+    /* 꼬리 띠를 하나의 도형으로 그림(조각으로 나눠 그리면 이음새 줄무늬가 생기고, 움직일 때 그 줄이 흘러서 깜빡여 보였음).
+       굵기: 꼬리 끝 가늘게 → 머리 쪽 형광펜 굵기. 진하기: 꼬리 끝에서 앞쪽 40%까지 서서히 진해짐 */
+    function ribbonPath(P,d0,d1,band,wk){
+      const N=64,q=[];for(let j=0;j<=N;j++)q.push(at(P,d0+(d1-d0)*j/N));
+      const L=[],R=[];
+      q.forEach((p,j)=>{
+        const a=q[Math.max(0,j-1)],b=q[Math.min(N,j+1)],dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len;
+        const w=band*wk*(.18+.82*Math.pow(j/N,.55))/2;
+        L.push({x:p.x+nx*w,y:p.y+ny*w});R.push({x:p.x-nx*w,y:p.y-ny*w});
+      });
+      dctx.beginPath();dctx.moveTo(L[0].x,L[0].y);L.forEach(p=>dctx.lineTo(p.x,p.y));for(let j=R.length-1;j>=0;j--)dctx.lineTo(R[j].x,R[j].y);dctx.closePath();
+      return{tail:q[0],mid:q[Math.round(N*.4)]};
+    }
+    function fadeFill(e,col,a){
+      const g=dctx.createLinearGradient(e.tail.x,e.tail.y,e.mid.x,e.mid.y);
+      g.addColorStop(0,rgba(col,0));g.addColorStop(1,rgba(col,a));return g;
+    }
+    function drawTrail(P,d0,d1,band,ink,glow,fade){
       if(d1-d0<1)return;
-      const N=48,q=[];for(let j=0;j<=N;j++)q.push(at(P,d0+(d1-d0)*j/N));
-      const nrm=q.map((p,j)=>{const a=q[Math.max(0,j-1)],b=q[Math.min(N,j+1)],dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;return{x:-dy/L,y:dx/L};});
-      const ribbon=(wk,alphaAt,col)=>{
-        for(let j=1;j<=N;j++){
-          const t=j/N,a=alphaAt(t,d0+(d1-d0)*(j-.5)/N);if(a<.01)continue;
-          const w0=band*wk*(.55+.45*Math.pow((j-1)/N,.6))/2,w1=band*wk*(.55+.45*Math.pow(t,.6))/2,A=q[j-1],B=q[j],na=nrm[j-1],nb=nrm[j];
-          dctx.fillStyle=rgba(col,a);dctx.beginPath();
-          dctx.moveTo(A.x+na.x*w0,A.y+na.y*w0);dctx.lineTo(B.x+nb.x*w1,B.y+nb.y*w1);
-          dctx.lineTo(B.x-nb.x*w1+(B.x-A.x)*.04,B.y-nb.y*w1+(B.y-A.y)*.04);dctx.lineTo(A.x-na.x*w0,A.y-na.y*w0);dctx.closePath();dctx.fill();
-        }
-      };
+      // 바깥 빛 번짐(흐리게)
+      dctx.globalCompositeOperation='lighter';dctx.filter='blur(6px)';
+      let e=ribbonPath(P,d0,d1,band,2);dctx.fillStyle=fadeFill(e,glow,.12*fade);dctx.fill();
+      dctx.filter='none';
+      // 형광펜 띠: 형광펜 자리(길이 Lb)에 닿으면 거기부터는 실제 형광펜(DOM)이 이어받음
+      const e1=Math.min(d1,P.Lb);
+      if(e1-d0>1){dctx.globalCompositeOperation='source-over';e=ribbonPath(P,d0,e1,band,1);dctx.fillStyle=fadeFill(e,ink,.9*fade);dctx.fill();}
       dctx.globalCompositeOperation='lighter';
-      ribbon(2.2,t=>.07*Math.pow(t,1.2)*fade,glow);            // 바깥 빛 번짐
-      dctx.globalCompositeOperation='source-over';
-      ribbon(1,(t,dd)=>dd>P.Lb?0:.9*Math.pow(t,.8)*fade,ink);    // 형광펜 띠(형광펜 자리에 오면 실제 형광펜이 이어받음)
-      dctx.globalCompositeOperation='lighter';
-      ribbon(.3,t=>.18*Math.pow(t,2.5)*fade,[255,255,255]);      // 머리 쪽 은은한 밝은 심
     }
     let linger=0,lingerRaf=0,lastArgs=[0,0];
     function frameDraw(pA,pB,lk){ // lk: 끝난 뒤 잦아드는 정도(0→1, 끝나기 전엔 0)
@@ -795,7 +816,7 @@ window.EyeKit=(()=>{
   }
   return {make,POS:{left:[16.33,MID],center:[CX,MID],down:[CX,24.13],right:[47.74,MID]}};
 })();
-/* ===== 인트로: 스위치 → 로딩 → 메인 ===== */
+/* ===== 인트로: (자동으로) 켜짐 → 로딩 → 메인 ===== */
 (()=>{
   const intro=document.getElementById('intro'),sw=document.getElementById('sw'),pct=document.getElementById('pct'),bar=document.getElementById('bar');
   let busy=false;
@@ -809,7 +830,7 @@ window.EyeKit=(()=>{
     if(cap){cap.classList.add('show');setTimeout(()=>cap.classList.remove('show'),3000);}
     setTimeout(()=>window.__lightSeqStart&&window.__lightSeqStart(),cap?2700:0);
   }
-  // 인트로 눈: 어두운 눈(배경과 비슷한 색). 평소엔 눈동자가 가끔 반대쪽을 흘끗 보고, 가끔 깜빡임
+  // 인트로 눈: 어두운 눈(배경과 비슷한 색)으로 잠깐 보였다가 자동으로 켜짐
   const E=EyeKit.make(sw),POS=EyeKit.POS,glowB=sw.querySelector('.sw-glow b');
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   E.theme({open:'#303030',closed:'#303030',stroke:'#262626'},true);
@@ -818,17 +839,6 @@ window.EyeKit=(()=>{
     const k=sw.offsetWidth/65,d=19.28*k;
     glowB.style.cssText=`left:${e.p[0]*k}px;top:${e.p[1]*k}px;width:${d}px;height:${d}px;opacity:${Math.max(0,1-e.s/.35)}`; // 꺼풀이 조금만 내려와도 빛이 가려지듯 바로 약해짐(빛 테두리만 떠 있는 검은 원이 안 보이게)
   };
-  let on=false,hov=false,idleT=0;
-  async function idle(){
-    if(on||hov||reduce)return;
-    const r=Math.random();
-    if(r<.35){await E.to(2,150);if(!on)await E.to(0,220);}
-    else{const x=E.p[0]<32?POS.right:POS.left;await E.look(x,900);}
-    idleT=setTimeout(idle,1800+Math.random()*2600);
-  }
-  idleT=setTimeout(idle,1400);
-  sw.addEventListener('mouseenter',()=>{if(on)return;hov=true;clearTimeout(idleT);E.pupil('#161616');});
-  sw.addEventListener('mouseleave',()=>{if(on)return;hov=false;E.pupil('#0a0a0a');idleT=setTimeout(idle,900);});
   async function openEye(){
     if(reduce){finish();return;}
     intro.classList.add('opening');                 // 로딩 글자는 먼저 사라짐
@@ -839,8 +849,9 @@ window.EyeKit=(()=>{
     sw.classList.add('fadeout');await new Promise(r=>setTimeout(r,700));
     finish();
   }
-  sw.addEventListener('click',()=>{
-    if(busy)return;busy=true;on=true;clearTimeout(idleT);
+  /* 들어오면 누르지 않아도 자동으로 켜지고 로딩이 진행됨(눈이 잠깐 보인 뒤 켜짐) */
+  function start(){
+    if(busy)return;busy=true;
     if(E.sTo!==0)E.to(0,200);
     E.pupil('#F5F5F5');
     E.look(E.p[0]<32?POS.right:POS.left,900);       // 켜지면 눈동자가 반대쪽으로 굴러감
@@ -852,7 +863,9 @@ window.EyeKit=(()=>{
       if(p<1)return requestAnimationFrame(step);
       setTimeout(openEye,350);
     })(t0);
-  });
+  }
+  sw.style.pointerEvents='none';sw.tabIndex=-1;
+  if(!intro.classList.contains('done'))setTimeout(start,700);
 })();
 /* ===== 장면(한 화면) 진행 =====
    페이지를 아래로 스크롤하지 않고, 늘 100vh 한 화면 안에서 장면만 바뀜: 01 LOOK(빛) → 02 FIND(형광펜) → 03 REVEAL(기획 의도).
