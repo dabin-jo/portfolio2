@@ -50,9 +50,13 @@
   <button type="button" id="scPrev" aria-label="이전 장면">←</button>
   <button type="button" id="scNext" aria-label="다음 장면">→</button>
 </div>
+<!-- 인트로(피그마 2032:312): 로딩 바가 왼쪽부터 쭉 채워지고 → 그 선이 눈처럼 위아래로 벌어지며 그 틈으로 첫 화면이 보이고 → 눈이 화면 밖까지 커지며 전환 -->
 <div id="intro">
-  <button class="sw eyesw" id="sw" aria-hidden="true" tabindex="-1"><span class="sw-glow"><b></b></span></button>
-  <div class="ld"><span id="pct">LOADING 0%</span><div class="bar"><b id="bar"></b></div></div>
+  <div class="ld2" id="ld2">
+    <div class="ld2-row"><span>LOADING...</span><span id="pct">0%</span></div>
+    <div class="ld2-bar"><b id="bar"></b></div>
+  </div>
+  <svg class="ld2-eye" id="ld2Eye" aria-hidden="true"><path class="ld2-cover" fill-rule="evenodd"/><path class="ld2-rim"/></svg>
 </div>
 
 
@@ -139,6 +143,5 @@
 <script src="find.js"></script>
 <script src="paper.js"></script>
 <script src="script.js"></script>
-<script src="glitch.js"></script>
 </body>
 </html>

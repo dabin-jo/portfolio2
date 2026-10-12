@@ -825,56 +825,51 @@ window.EyeKit=(()=>{
   }
   return {make,POS:{left:[16.33,MID],center:[CX,MID],down:[CX,24.13],right:[47.74,MID]}};
 })();
-/* ===== 인트로: (자동으로) 켜짐 → 로딩 → 메인 ===== */
+/* ===== 인트로 (피그마 2032:312): 로딩 바가 쭉 채워짐 → 그 선이 눈처럼 위아래로 벌어지며 틈으로 첫 화면이 보임 → 눈이 화면 밖까지 커지며 전환 =====
+   눈 모양 = 선의 양 끝을 꼭짓점으로 하는 렌즈(위아래 곡선). 피그마 비율: 가로 1800 : 세로 942 */
 (()=>{
-  const intro=document.getElementById('intro'),sw=document.getElementById('sw'),pct=document.getElementById('pct'),bar=document.getElementById('bar');
-  let busy=false;
-  scrollTo({top:0,left:0,behavior:'instant'}); // behavior:'instant'로 scroll-behavior:smooth를 무시하고 즉시 이동(안 그러면 스르륵 스크롤되는 게 보임)
-  const wait=ms=>new Promise(r=>setTimeout(r,ms));
-  // 눈을 뜨면: 주제 한 줄('시선')을 먼저 보여준 뒤 → 스포트라이트가 하나씩 켜짐. 위쪽 내비게이션도 이때 나타남
-  function finish(){
-    intro.classList.add('done');
+  const intro=document.getElementById('intro'),pct=document.getElementById('pct'),bar=document.getElementById('bar');
+  const svg=document.getElementById('ld2Eye'),cover=svg.querySelector('.ld2-cover'),rim=svg.querySelector('.ld2-rim');
+  scrollTo({top:0,left:0,behavior:'instant'});
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const LOAD_MS=2600,HOLD_MS=250,OPEN_MS=950,GROW_MS=1100,EYE_RATIO=942/1800,GROW_TO=3.6;
+  const eio=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,ein=t=>t*t*t;
+  const anim=(ms,fn,e)=>new Promise(r=>{const t0=performance.now();(function f(now){const t=Math.min(1,(now-t0)/ms);fn(e?e(t):t);t<1?requestAnimationFrame(f):r();})(t0);});
+  let heroStarted=false;
+  // 첫 화면 시작: 주제 한 줄('시선')을 먼저 보여준 뒤 → 스포트라이트가 하나씩 켜짐. 위쪽 내비게이션도 이때 나타남
+  function startHero(){
+    if(heroStarted)return;heroStarted=true;
     window.Scenes&&Scenes.start();
     const cap=document.getElementById('hCap');
     if(cap){cap.classList.add('show');setTimeout(()=>cap.classList.remove('show'),3000);}
     setTimeout(()=>window.__lightSeqStart&&window.__lightSeqStart(),cap?2700:0);
   }
-  // 인트로 눈: 어두운 눈(배경과 비슷한 색)으로 잠깐 보였다가 자동으로 켜짐
-  const E=EyeKit.make(sw),POS=EyeKit.POS,glowB=sw.querySelector('.sw-glow b');
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  E.theme({open:'#303030',closed:'#303030',stroke:'#262626'},true);
-  E.pupil('#0a0a0a');E.set(0);E.look(POS.left,0);
-  E.onFrame=e=>{ // 켜진 뒤 눈동자에서 번지는 빛이 눈동자를 따라다님(꺼풀이 덮이면 함께 약해짐)
-    const k=sw.offsetWidth/65,d=19.28*k;
-    glowB.style.cssText=`left:${e.p[0]*k}px;top:${e.p[1]*k}px;width:${d}px;height:${d}px;opacity:${Math.max(0,1-e.s/.35)}`; // 꺼풀이 조금만 내려와도 빛이 가려지듯 바로 약해짐(빛 테두리만 떠 있는 검은 원이 안 보이게)
-  };
-  async function openEye(){
-    if(reduce){finish();return;}
-    intro.classList.add('opening');                 // 로딩 글자는 먼저 사라짐
-    await E.to(2,230);await E.to(0,330);            // 한 번 깜빡
-    await new Promise(r=>setTimeout(r,160));
-    await E.look(POS.center,750);                   // 눈동자가 가운데를 봄
-    // 눈 윤곽·속눈썹이 먼저 스르륵 사라지고, 가운데 눈동자 빛만 잠깐 남았다가 옅어지면서 → 그 자리에서 첫 스포트라이트가 이어짐
-    sw.classList.add('fadeout');await new Promise(r=>setTimeout(r,700));
-    finish();
+  // 눈(렌즈) 그리기: 선 위치(cx,cy)를 가운데로, 반폭 hw · 반높이 hh
+  function drawEye(cx,cy,hw,hh){
+    const W=innerWidth,H=innerHeight;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    const lens=`M${cx-hw},${cy} Q${cx},${cy-2*hh} ${cx+hw},${cy} Q${cx},${cy+2*hh} ${cx-hw},${cy} Z`;
+    cover.setAttribute('d',`M0,0 H${W} V${H} H0 Z ${lens}`);rim.setAttribute('d',lens);
   }
-  /* 들어오면 누르지 않아도 자동으로 켜지고 로딩이 진행됨(눈이 잠깐 보인 뒤 켜짐) */
+  async function openEye(){
+    if(reduce){startHero();intro.classList.add('done');return;}
+    const r=bar.parentElement.getBoundingClientRect(),cx=(r.left+r.right)/2,cy=(r.top+r.bottom)/2,hw=r.width/2,HH=hw*EYE_RATIO;
+    drawEye(cx,cy,hw,0);intro.classList.add('eye-open');
+    await anim(OPEN_MS,k=>drawEye(cx,cy,hw,HH*k),eio);          // 선이 눈처럼 벌어짐
+    startHero();
+    await anim(GROW_MS,k=>{const S=1+(GROW_TO-1)*k;drawEye(cx,cy,hw*S,HH*S);rim.style.opacity=String(1-k);},ein); // 눈이 화면 밖까지 커짐
+    intro.classList.add('done');
+  }
+  /* 들어오면 자동으로 로딩이 진행됨 */
   function start(){
-    if(busy)return;busy=true;
-    if(E.sTo!==0)E.to(0,200);
-    E.pupil('#F5F5F5');
-    E.look(E.p[0]<32?POS.right:POS.left,900);       // 켜지면 눈동자가 반대쪽으로 굴러감
-    sw.classList.add('on');intro.classList.add('go');
-    const t0=performance.now(),D=2600;
+    const t0=performance.now();
     (function step(now){
-      const p=Math.min(1,(now-t0)/D),e=1-Math.pow(1-p,2);
-      const n=Math.round(e*100);pct.textContent='LOADING '+n+'%';bar.style.width=n+'%';
+      const p=Math.min(1,(now-t0)/LOAD_MS),e=1-Math.pow(1-p,2),n=Math.round(e*100);
+      pct.textContent=n+'%';bar.style.width=n+'%';
       if(p<1)return requestAnimationFrame(step);
-      setTimeout(openEye,350);
+      setTimeout(openEye,HOLD_MS);
     })(t0);
   }
-  sw.style.pointerEvents='none';sw.tabIndex=-1;
-  setTimeout(()=>{if(!intro.classList.contains('done'))start();},700); // 상세 페이지에서 돌아온 경우(인트로 건너뜀)엔 켜지 않음
+  setTimeout(()=>{if(!intro.classList.contains('done'))start();},400); // 상세 페이지에서 돌아온 경우(인트로 건너뜀)엔 시작 안 함
 })();
 /* ===== 장면(한 화면) 진행 =====
    페이지를 아래로 스크롤하지 않고, 늘 100vh 한 화면 안에서 장면만 바뀜: 01 LOOK(빛) → 02 FIND(형광펜) → 03 REVEAL(기획 의도).
