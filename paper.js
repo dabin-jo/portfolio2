@@ -73,14 +73,15 @@ const Paper=(()=>{
     S.w=S.el.offsetWidth||1;S.h=S.el.offsetHeight||1;
     const{w,h}=S,R=S.corner[1]==='r',B=S.corner[0]==='b';
     const T=Math.max(10,Math.min(18,innerWidth*.009)); // 색 띠 두께
-    const x0=R?0:T,x1=R?w-T:w,y0=B?0:T,y1=B?h-T:h;
+    const X=2; // 색 띠가 없는 두 변은 종이를 밑판보다 2px 바깥까지 덮음 → 가장자리 안티앨리어싱으로 밑판 색이 가는 선처럼 비치지 않게
+    const x0=R?-X:T,x1=R?w-T:w+X,y0=B?-X:T,y1=B?h-T:h+X;
     S.rect=[{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1}];
-    S.C={x:R?x1:x0,y:B?y1:y0};
+    S.C={x:R?x1:x0,y:B?y1:y0};S.pw=w-T;S.ph=h-T;
     S.p={x:rel.x*w,y:rel.y*h};S.target={x:rt.x*w,y:rt.y*h};
     S.svg.setAttribute('width',w);S.svg.setAttribute('height',h);S.svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
     S.back.style.setProperty('--pad',(T+Math.min(w,h)*.04)+'px');
     // 크게 접혔을 때 드러나는 직각삼각형(직각 = C): 두 변 길이 a(가로) b(세로) 안에 글 상자가 들어가도록 줄임
-    const P0={x:S.open[0]*w,y:S.open[1]*h},f=foldOf(S.C,P0);
+    const P0=openP(S),f=foldOf(S.C,P0);
     S.back.style.scale='1';
     if(f){
       const ux=R?-1:1,uy=B?-1:1;
@@ -92,9 +93,18 @@ const Paper=(()=>{
   }
   const dist=(S,k)=>Math.min(S.w,S.h)*k;
   /* 상태별 목표 P: 모서리에서 종이 가운데 방향으로 */
+  /* 접힌 날개가 종이 밖으로 삐져나오지 않게: 접히는 선이 모서리에 닿은 두 변(가로·세로) 안에서만 지나가도록 P를 모서리 쪽으로 당김.
+     (선이 반대편 변까지 넘어가면 날개가 사각형 모양이 되어 종이 아래·옆으로 튀어나옴) */
+  function limitP(S,P){
+    const dx=P.x-S.C.x,dy=P.y-S.C.y,L2=dx*dx+dy*dy;if(L2<1)return P;
+    const a=Math.abs(dx)>.01?L2/(2*Math.abs(dx)):1e9,b=Math.abs(dy)>.01?L2/(2*Math.abs(dy)):1e9; // 선이 가로·세로 변을 자르는 곳까지의 거리
+    const f=Math.min(1,S.pw*.96/a,S.ph*.96/b);
+    return{x:S.C.x+dx*f,y:S.C.y+dy*f};
+  }
+  const openP=S=>limitP(S,{x:S.open[0]*S.w,y:S.open[1]*S.h});
   function goal(S){
     if(S.state==='flat')return{...S.C};
-    if(S.state==='open')return{x:S.open[0]*S.w,y:S.open[1]*S.h};
+    if(S.state==='open')return openP(S);
     const cx=S.w/2-S.C.x,cy=S.h/2-S.C.y,L=Math.hypot(cx,cy)||1,d=dist(S,S.hover?HOVER:REST);
     return{x:S.C.x+cx/L*d,y:S.C.y+cy/L*d};
   }
@@ -147,7 +157,7 @@ const Paper=(()=>{
       d.moved=true;markInteracted();
       // 손을 따라가되, 종이 안쪽(모서리에서 너무 멀리 가지 않게)으로만
       const M=Math.min(S.w,S.h)*.04;
-      S.target={x:Math.max(M,Math.min(S.w-M,d.p0.x+dx)),y:Math.max(M,Math.min(S.h-M,d.p0.y+dy))};
+      S.target=limitP(S,{x:Math.max(M,Math.min(S.w-M,d.p0.x+dx)),y:Math.max(M,Math.min(S.h-M,d.p0.y+dy))});
       kick();
     });
     const end=e=>{
@@ -157,7 +167,7 @@ const Paper=(()=>{
         markInteracted();setState(S,S.state==='open'?'rest':'open');return;
       }
       // 놓은 자리: 살짝 접힘 / 크게 접힘 중 가까운 쪽으로
-      const dC=Math.hypot(S.p.x-S.C.x,S.p.y-S.C.y),dOpen=Math.hypot(S.open[0]*S.w-S.C.x,S.open[1]*S.h-S.C.y),dRest=dist(S,REST);
+      const dC=Math.hypot(S.p.x-S.C.x,S.p.y-S.C.y),dOpen=(o=>Math.hypot(o.x-S.C.x,o.y-S.C.y))(openP(S)),dRest=dist(S,REST);
       setState(S,dC>(dOpen+dRest)/2?'open':'rest');
     };
     el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
